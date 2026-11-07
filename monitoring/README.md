@@ -31,7 +31,7 @@ absentes sont alors affichées « — ».
 - Il ne retient que la chaîne, les blocs, les en-têtes, la progression et l'état
   de synchronisation. Une panne RPC donne des champs inconnus, sans republier
   un ancien état comme s'il était récent.
-- Le `logdir` est lu dans `/home/bdl/mining/ckpool/ckpool.conf` ; s'il est relatif,
+- Le `logdir` est lu dans `/home/bdl/mining/ckpool/local.conf`, le fichier utilisé par le service CKPool ; s'il est relatif,
   le dossier de travail du service CKPool puis le dossier de sa configuration
   sont recherchés. Le fichier attendu est `logs/pool/pool.status` dans le cas présent.
 - CKPool écrit plusieurs objets JSON successifs. Le collecteur les lit, puis
@@ -82,4 +82,4 @@ python3 /home/bdl/bdl-pool-site/monitoring/collect.py
 
 Cette commande imprime uniquement le relevé public filtré. Si le dossier des
 journaux ne peut pas être détecté, tester avec `--pool-status /chemin/pool/pool.status`.
-Ne pas publier bitcoin.conf, ckpool.conf, le cookie RPC ou une sortie de journal brut.
+Ne pas publier bitcoin.conf, local.conf, ckpool.conf, le cookie RPC ou une sortie de journal brut.

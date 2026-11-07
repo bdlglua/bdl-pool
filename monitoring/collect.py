@@ -169,7 +169,7 @@ def history_from(path, now):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--bitcoin-cli', default='/usr/local/bin/bitcoin-cli')
-    parser.add_argument('--config', default='/home/bdl/mining/ckpool/ckpool.conf')
+    parser.add_argument('--config', default='/home/bdl/mining/ckpool/local.conf')
     parser.add_argument('--pool-status')
     parser.add_argument('--previous')
     parser.add_argument('--stratum-host', default='192.168.1.2')
