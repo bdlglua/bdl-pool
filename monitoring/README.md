@@ -1,8 +1,8 @@
-# Suivi automatique — VM Freebox
+# Suivi automatique — serveur
 
 Le collecteur fonctionne avec Python 3 standard, Git, SSH, `flock` et systemd.
 Il s'exécute sous `bdl`, comme `bitcoin-cli`, et lit les fichiers CKPool sans
-modifier Bitcoin Core, CKPool, leur configuration ou les ports de la Freebox.
+modifier Bitcoin Core, CKPool, leur configuration ou les ports du routeur.
 
 ## Installation
 

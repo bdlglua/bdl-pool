@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install a systemd timer on bdl's Freebox VM. Run as bdl, not with sudo.
+# Install a systemd timer on the pool server. Run as bdl, not with sudo.
 set -euo pipefail
 [[ "$(id -un)" == bdl && "$HOME" == /home/bdl ]] || { echo 'Lancer ce script avec le compte bdl, sans sudo.' >&2; exit 1; }
 for tool in git python3 ssh flock systemctl sudo; do
