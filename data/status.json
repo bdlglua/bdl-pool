@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "source": "manual",
+  "updatedAt": "2026-11-07",
+  "node": {
+    "chain": "main",
+    "blocks": 185515,
+    "headers": 974990,
+    "verificationProgress": 0.002946363560477113,
+    "initialBlockDownload": true
+  },
+  "pool": {
+    "ready": false,
+    "hashrateHps": null,
+    "workers": null,
+    "bestShare": null,
+    "blocksFound": null
+  },
+  "history": []
+}
