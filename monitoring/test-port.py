@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Temporary TCP reachability test. Does not serve files or start mining."""
+"""Temporary port test via a fixed HTTP/TCP reply. Never serves local files."""
 import argparse
 import socket
 import sys
@@ -21,10 +21,10 @@ def main():
             server.listen(4)
             port = server.getsockname()[1]
             print(f'Test TCP en attente sur le port {port}. Laissez ce terminal ouvert.', flush=True)
-            print('Arrêt automatique après un test réussi ou au bout de cinq minutes. Ctrl+C pour arrêter.', flush=True)
+            print(f'Arrêt automatique après un test réussi ou au bout de {args.timeout:g} secondes. Ctrl+C pour arrêter.', flush=True)
             deadline = time.monotonic() + args.timeout
             while time.monotonic() < deadline:
-                server.settimeout(min(1, deadline - time.monotonic()))
+                server.settimeout(max(.001, min(1, deadline - time.monotonic())))
                 try:
                     client, _ = server.accept()
                 except socket.timeout:
@@ -39,10 +39,18 @@ def main():
                             if not chunk:
                                 break
                             request += chunk
-                        if request == b'BDL-PORT-TEST\n':
-                            client.sendall(b'BDL-PORT-OK\n')
-                            print('Connexion de test valide reçue. Test terminé, port de test fermé.', flush=True)
-                            return 0
+                        first_line = request.split(b'\n', 1)[0].rstrip(b'\r')
+                        reply = b'BDL-PORT-OK\n'
+                        if first_line in (b'GET /bdl-port-test HTTP/1.1', b'GET /bdl-port-test HTTP/1.0'):
+                            client.sendall(b'HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n'
+                                           b'Cache-Control: no-store\r\nConnection: close\r\n'
+                                           + f'Content-Length: {len(reply)}\r\n\r\n'.encode() + reply)
+                        elif request == b'BDL-PORT-TEST\n':
+                            client.sendall(reply)
+                        else:
+                            continue
+                        print('Connexion de test valide reçue. Test terminé, port de test fermé.', flush=True)
+                        return 0
                     except OSError:
                         continue
             print('Délai écoulé. Port de test fermé, aucun test validé.', flush=True)
