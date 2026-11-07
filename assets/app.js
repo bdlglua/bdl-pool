@@ -262,15 +262,34 @@
       document.querySelector(".menu-toggle").setAttribute("aria-label", t("Ouvrir le menu"));
     }
   });
-  if ("IntersectionObserver" in window) {
-    const sections = ["dashboard", "connexion", "solo", "faq"].map($);
-    const observer = new IntersectionObserver((entries) => {
-      const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-      if (!visible) return;
-      document.querySelectorAll(".main-nav a").forEach((link) => link.classList.toggle("active", link.getAttribute("href") === "#" + visible.target.id));
-    }, { rootMargin: "-10% 0px -45% 0px", threshold: [0, .2, .6] });
-    sections.forEach((section) => observer.observe(section));
+  // Derive the current section from all headings, not only the observer
+  // entries that changed. A short section near the footer must not select FAQ.
+  const navigationLinks = [...document.querySelectorAll(".main-nav a")];
+  const navigationSections = navigationLinks.map((link) => $(link.hash.slice(1)));
+  let navigationFrame = 0;
+  function updateNavigation() {
+    navigationFrame = 0;
+    const offset = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+    let current = navigationSections[0];
+    for (const section of navigationSections) {
+      if (section.getBoundingClientRect().top <= offset + 12) current = section;
+    }
+    for (const link of navigationLinks) {
+      const selected = link.hash === "#" + current.id;
+      link.classList.toggle("active", selected);
+      if (selected) link.setAttribute("aria-current", "location");
+      else link.removeAttribute("aria-current");
+    }
   }
+  function scheduleNavigation() {
+    if (!navigationFrame) navigationFrame = requestAnimationFrame(updateNavigation);
+  }
+  window.addEventListener("scroll", scheduleNavigation, { passive: true });
+  window.addEventListener("resize", scheduleNavigation);
+  window.addEventListener("hashchange", scheduleNavigation);
+  window.addEventListener("load", scheduleNavigation);
+  if ("ResizeObserver" in window) new ResizeObserver(scheduleNavigation).observe($("main"));
+  updateNavigation();
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible" && Date.now() - latestPoll > 60000) loadStatus();
   });

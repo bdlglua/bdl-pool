@@ -13,12 +13,13 @@
   --accent: #d4a36c;
   --orange: #d4a36c;
   --green: #9abda6;
+  --anchor-offset: 32px;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: 32px; }
+html { scroll-behavior: smooth; scroll-padding-top: var(--anchor-offset); }
 body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.55 var(--font); -webkit-font-smoothing: antialiased; }
 a { color: inherit; text-decoration: none; }
 button, input { font: inherit; }
@@ -46,7 +47,7 @@ main { min-width: 0; }
 .skip-link:focus { top: 12px; }
 
 /* Persistent navigation */
-.site-header { position: fixed; inset: 0 auto 0 0; width: 208px; z-index: 30; background: var(--sidebar); border-right: 1px solid var(--line); }
+.site-header { overflow-y: auto; position: fixed; inset: 0 auto 0 0; width: 208px; z-index: 30; background: var(--sidebar); border-right: 1px solid var(--line); }
 .header-inner { min-height: 100%; display: flex; flex-direction: column; align-items: stretch; padding: 34px 18px 22px; }
 .brand { display: flex; align-items: baseline; gap: 9px; width: fit-content; margin: 0 12px 42px; }
 .brand-mark { font-size: 27px; font-weight: 750; line-height: 1; letter-spacing: -1.5px; }
@@ -176,6 +177,8 @@ main { min-width: 0; }
 .principles article:first-child { padding-top: 0; }
 .principles article:last-child { border-bottom: 0; padding-bottom: 0; }
 .principles p { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.8; }
+/* Leave enough document space for the last navigation target to reach the top. */
+.faq-section { min-height: calc(100svh - var(--anchor-offset)); align-items: start; align-content: start; }
 .faq-aside { margin-top: 12px; color: var(--muted); font-size: 12px; }
 .faq-list details { border-bottom: 1px solid var(--line); }
 .faq-list details:first-child { border-top: 1px solid var(--line); }
@@ -207,7 +210,7 @@ main { min-width: 0; }
   .toast { left: calc(50% + 92px); }
 }
 @media (max-width: 860px) {
-  .site-header { position: sticky; inset: 0 0 auto; width: 100%; border-right: 0; border-bottom: 1px solid var(--line); }
+  .site-header { overflow: visible; position: sticky; inset: 0 0 auto; width: 100%; border-right: 0; border-bottom: 1px solid var(--line); }
   .header-inner { min-height: 64px; flex-direction: row; align-items: center; gap: 18px; padding: 0 24px; }
   .brand { margin: 0; }
   .brand-mark { font-size: 25px; }
@@ -220,7 +223,7 @@ main { min-width: 0; }
   .main-nav { display: none; position: absolute; inset: 63px 0 auto; background: var(--sidebar); padding: 12px 24px; border-bottom: 1px solid var(--line); }
   .main-nav.open { display: flex; }
   main { margin-left: 0; }
-  html { scroll-padding-top: 88px; }
+  :root { --anchor-offset: 88px; }
   .wrap { width: calc(100% - 48px); }
   .hero { padding-top: 28px; padding-bottom: 28px; }
   .hero .button { display: none; }
