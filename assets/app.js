@@ -58,11 +58,14 @@
   function currentHost() {
     return network === "public" ? String(config.publicHost || "").trim() : String(config.localHost || "").trim();
   }
+  function currentPort() {
+    return network === "public" ? (config.publicPort || config.stratumPort || 3333) : (config.stratumPort || 3333);
+  }
   function renderEndpoint() {
     const host = currentHost();
     const publicUnavailable = network === "public" && !host;
     $("endpoint-host").textContent = host || t("Non configuré");
-    $("endpoint-port").textContent = config.stratumPort || 3333;
+    $("endpoint-port").textContent = currentPort();
     $("copy-host").disabled = !host;
     $("miner-form").querySelector("button[type=submit]").disabled = publicUnavailable;
     $("network-note").textContent = network === "local"
@@ -232,7 +235,7 @@
       $(focus).focus();
       return;
     }
-    settings = { host, port: config.stratumPort || 3333, username: address + (worker ? "." + worker : ""), password: "x" };
+    settings = { host, port: currentPort(), username: address + (worker ? "." + worker : ""), password: "x" };
     $("result-host").textContent = settings.host;
     $("result-port").textContent = settings.port;
     $("result-user").textContent = settings.username;
