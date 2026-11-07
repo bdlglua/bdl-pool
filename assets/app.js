@@ -112,7 +112,7 @@
       text.textContent = label;
       svg.appendChild(text);
     }
-    svg.appendChild(svgElement("polyline", { points: xy.map((p) => p.join(",")).join(" "), fill: "none", stroke: "#d4a36c", "stroke-width": 2, "stroke-linejoin": "round" }));
+    svg.appendChild(svgElement("polyline", { points: xy.map((p) => p.join(",")).join(" "), fill: "none", stroke: "#99e39e", "stroke-width": 2, "stroke-linejoin": "round" }));
     const formatTime = (value) => new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" }).format(new Date(value));
     for (const [x, anchor, time] of [[48, "start", points[0].time], [630, "end", points.at(-1).time]]) {
       const text = svgElement("text", { x, y: 165, "text-anchor": anchor, class: "chart-label" });
