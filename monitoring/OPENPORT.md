@@ -60,7 +60,43 @@ utiliseront les ports publics attribués. La clé publique Noise V2 reste celle 
 pool. Pour tester le second profil sans attendre CKPool, utiliser `test --profile v2`.
 Chaque essai reste limité à dix minutes ; aucun service permanent n’est installé.
 
-## Ce qui reste à migrer
+## Installer les tunnels permanents
+
+Une fois les deux tests V1 validés :
+
+```bash
+git -C /home/bdl/bdl-pool-site pull --ff-only
+bash /home/bdl/bdl-pool-site/monitoring/install-openport.sh
+```
+
+Trois unités `bdl-pool-openport@v1`, `@v2` et `@api` sont activées au démarrage.
+V1 réutilise l’identité et le port des tests. V2 et API possèdent chacune une
+identité conservée séparément. Le script affiche seulement leurs adresses publiques.
+Les destinations sont respectivement `127.0.0.1:3333`, `:3336` et `:443`.
+Les relais peuvent démarrer pendant l’attente de synchronisation Bitcoin ;
+cela n’indique pas que Stratum est déjà opérationnel.
+
+Les clients s’exécutent sous `bdl`, avec leur dossier de profil accessible en
+écriture, leur code en lecture seule et les autres dossiers personnels masqués.
+Les sorties du binaire restent dans le journal privé du profil. Le service
+refuse de remplacer une identité absente et relance les connexions échouées.
+
+L’installation teste HTTPS à travers le relais avec le certificat actuel et le
+nom réel du pool, avant toute modification DNS. Elle repère également les noms
+des anciennes unités de mise à jour DuckDNS et la présence d’une tâche cron,
+sans afficher leurs commandes ni leurs jetons.
+
+```bash
+systemctl status bdl-pool-openport@v1 bdl-pool-openport@v2 bdl-pool-openport@api --no-pager
+```
+
+Pour arrêter les relais :
+
+```bash
+sudo systemctl disable --now bdl-pool-openport@v1 bdl-pool-openport@v2 bdl-pool-openport@api
+```
+
+## DNS et HTTPS
 
 Cette étape ne modifie ni Bitcoin Core, ni CKPool, ni le routeur, ni le site,
 ni DuckDNS, ni Caddy. L’IP du domicile reste visible tant que des enregistrements
