@@ -143,16 +143,12 @@ h3 { font-size: 18px; margin-bottom: 0; }
 .endpoint-panel, .setup-form { min-width: 0; background: #ffffff08; border: 1px solid var(--line); border-radius: 16px; padding: 28px; }
 .endpoint-panel { display: flex; flex-direction: column; }
 .connection-grid .panel-heading { padding: 0 0 24px; }
-.network-tabs { display: flex; gap: 24px; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
-.network-tabs button { position: relative; padding: 0 0 13px; background: none; border: 0; color: var(--subtle); font-size: 14px; }
-.network-tabs button.selected { color: var(--primary); }
-.network-tabs button.selected::after { content: ""; position: absolute; inset: auto 0 -1px; height: 2px; background: var(--primary); }
 .endpoint-block { border: 1px solid #ffffff24; background: var(--bg); border-radius: 10px; padding: 19px; }
 .endpoint-value { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 0 18px; }
 .endpoint-value code { font-size: 27px; letter-spacing: .3px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .endpoint-port { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 15px; color: var(--subtle); font-size: 14px; }
 .endpoint-port code { color: var(--text); }
-.network-note { color: var(--subtle); font-size: 13px; line-height: 1.75; margin: 16px 0 0; }
+.endpoint-note { color: var(--subtle); font-size: 13px; line-height: 1.75; margin: 16px 0 0; }
 .availability-note { display: flex; align-items: flex-start; gap: 10px; margin: 20px 0 24px; color: var(--amber); font-size: 13px; line-height: 1.7; }
 .availability-note .dot { margin-top: 9px; background: var(--amber); }
 .endpoint-bottom { display: flex; align-items: flex-start; gap: 9px; padding-top: 20px; margin-top: auto; border-top: 1px solid var(--line); color: var(--subtle); font-size: 13px; }
@@ -309,7 +305,7 @@ h3 { font-size: 18px; margin-bottom: 0; }
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
 
-/* Protocol choice is independent of the local/Internet network choice. */
+/* Stratum protocol selector. */
 .protocol-selector { display: flex; gap: 10px; margin-bottom: 12px; }
 .protocol-selector button { flex: 1; min-height: 42px; padding: 9px 12px; background: transparent; border: 1px solid #ffffff30; border-radius: 8px; color: var(--muted); font-size: 14px; }
 .protocol-selector button.selected { border-color: var(--primary); background: #99e39e12; color: var(--primary); }
