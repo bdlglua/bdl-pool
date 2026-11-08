@@ -4,32 +4,36 @@ API publique en lecture seule, hébergée sur le serveur du pool. L’interface 
 documentation restent sur GitHub Pages. Aucun worker, share ou réglage n’est créé
 par une requête API.
 
-## Installation sur le serveur
+## Installation et mise à jour
 
-Le suivi automatique doit déjà être installé. Les ports TCP 80 et 443 doivent
-être redirigés vers le serveur du pool, et `bdl-pool.duckdns.org` doit pointer vers
-son adresse publique. Le compte d’exécution est `bdl`, sans sudo devant le script :
+L’accès public configuré passe par OpenPort sur le port 36018. Le relais
+transmet le flux HTTPS à Caddy sur le port local 443, puis Caddy transmet
+`/api/v1/*` à Python sur `127.0.0.1:8081`. Le certificat est renouvelé par
+Certbot avec validation DNS DuckDNS ; aucune redirection entrante du routeur
+n’est nécessaire après la migration.
+
+Pour installer les relais et préparer la migration : [OpenPort](../monitoring/OPENPORT.md).
+Une installation initiale de l’API utilise le mode direct avant cette migration.
+
+Pour mettre à jour l’API déjà installée, avec le compte `bdl` :
 
 ```bash
 git -C /home/bdl/bdl-pool-site pull --ff-only
 bash /home/bdl/bdl-pool-site/api/install.sh
 ```
 
-Le script installe Caddy depuis les paquets Debian, crée `bdl-pool-api.service`
-et ajoute un fragment Caddy après validation. Une sauvegarde de Caddyfile est
-créée ; un candidat invalide est restauré avant tout rechargement. Un service
-Nginx/Apache actif ou un port déjà pris par un autre service interrompt le script.
-Les ports Stratum, Bitcoin Core et le service CKPool ne sont pas modifiés.
+Le script conserve les ports OpenPort et le certificat géré par DNS grâce au
+manifeste public `/etc/bdl-pool-openport/public.json`. Le jeton DuckDNS reste
+séparé, accessible seulement par root. Le certificat et sa clé privée sont
+lisibles par le compte Caddy ; ils ne sont jamais servis par l’API.
 
-Python écoute uniquement sur `127.0.0.1:8081`. Caddy termine le HTTPS sur 443,
-renouvelle le certificat automatiquement et transmet `/api/v1/*` à Python.
 Le service Python voit uniquement son code, sa configuration publique et les
-statistiques en lecture seule ; son accès au reste du dossier personnel est masqué.
-Le port 8081 n’a pas à être redirigé sur le routeur.
+statistiques en lecture seule. Les ports Stratum, Bitcoin Core et CKPool ne
+sont pas modifiés. Le port 8081 reste local.
 
 ## Endpoints
 
-Base : `https://bdl-pool.duckdns.org/api/v1`
+Base : `https://bdl-pool.duckdns.org:36018/api/v1`
 
 | GET | Réponse |
 | --- | --- |
@@ -46,8 +50,8 @@ Base : `https://bdl-pool.duckdns.org/api/v1`
 Exemple avec une adresse utilisée pour miner :
 
 ```bash
-curl https://bdl-pool.duckdns.org/api/v1/pool
-curl 'https://bdl-pool.duckdns.org/api/v1/miners/VOTRE_ADRESSE_BTC/workers?limit=50&offset=0'
+curl https://bdl-pool.duckdns.org:36018/api/v1/pool
+curl 'https://bdl-pool.duckdns.org:36018/api/v1/miners/VOTRE_ADRESSE_BTC/workers?limit=50&offset=0'
 ```
 
 `address` est une adresse Bitcoin mainnet, sans suffixe de worker. Sa syntaxe est
@@ -123,7 +127,7 @@ ne sont pas écrits dans les journaux de l’API ; l’accès log Caddy n’est 
 ## Vérifier et mettre à jour
 
 ```bash
-curl -fsS https://bdl-pool.duckdns.org/api/v1/health
+curl -fsS https://bdl-pool.duckdns.org:36018/api/v1/health
 systemctl status bdl-pool-api bdl-pool-presence caddy --no-pager
 journalctl -u bdl-pool-api -n 20 --no-pager
 

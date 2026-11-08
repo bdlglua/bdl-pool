@@ -9,11 +9,11 @@
   <title>BDL Pool — Solo Mining</title>
   <link rel="icon" type="image/svg+xml" sizes="any" href="../assets/brand.svg?v=miners-1">
   <link rel="preload" href="../assets/fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="../assets/style.css?v=footer-1">
+  <link rel="stylesheet" href="../assets/style.css?v=openport-1">
   <link rel="stylesheet" href="../assets/miners.css?v=miners-1">
-  <script src="../config.js?v=miners-1" defer></script>
-  <script src="../assets/app.js?v=footer-1" defer></script>
-  <script src="../assets/miners.js?v=miners-1" defer></script>
+  <script src="../config.js?v=openport-1" defer></script>
+  <script src="../assets/app.js?v=openport-1" defer></script>
+  <script src="../assets/miners.js?v=openport-1" defer></script>
 </head>
 <body>
   <svg class="icon-sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
@@ -100,7 +100,7 @@
         <div class="panel endpoint-panel"><div class="panel-heading"><h3>Stratum</h3></div><div class="protocol-selector" role="group" aria-label="Stratum protocol"><button type="button" class="selected" data-protocol="v1" aria-pressed="true">Stratum V1</button><button type="button" data-protocol="v2" aria-pressed="false">Stratum V2</button></div><p id="protocol-note" class="protocol-note" hidden></p><div class="endpoint-block">
           <dl class="endpoint-fields">
             <div class="endpoint-field"><dt>Address</dt><dd><code id="endpoint-host">bdl-pool.duckdns.org</code><button type="button" id="copy-host" class="icon-button" aria-label="Copy server address"><svg class="icon"><use href="#i-copy"/></svg></button></dd></div>
-            <div class="endpoint-field"><dt>Port</dt><dd><code id="endpoint-port">3333</code><button type="button" id="copy-port" class="icon-button" aria-label="Copy port"><svg class="icon"><use href="#i-copy"/></svg></button></dd></div>
+            <div class="endpoint-field"><dt>Port</dt><dd><code id="endpoint-port">39991</code><button type="button" id="copy-port" class="icon-button" aria-label="Copy port"><svg class="icon"><use href="#i-copy"/></svg></button></dd></div>
             <div class="endpoint-field endpoint-key" id="endpoint-key-row" hidden><dt>Public encryption key</dt><dd><code id="endpoint-key">—</code><button type="button" id="copy-key" class="icon-button" aria-label="Copy public key"><svg class="icon"><use href="#i-copy"/></svg></button></dd></div>
           </dl>
           <button type="button" id="copy-url" class="endpoint-copy-url"><svg class="icon"><use href="#i-copy"/></svg><span>Copy full URL</span></button>
@@ -109,11 +109,11 @@
       </div>
     </section>
 
-    <section class="faq-section wrap" id="faq" aria-labelledby="faq-title"><div class="faq-intro"><h2 id="faq-title">FAQ</h2></div><div class="faq-list"><details><summary>Is the pool available?<span>+</span></summary><p id="faq-availability">Pool status unconfirmed.</p></details><details><summary>Can I connect over the Internet?<span>+</span></summary><p>Yes. Use bdl-pool.duckdns.org: port 3333 for V1 or 3336 for V2.</p></details><details><summary>Does each share earn a reward?<span>+</span></summary><p>No. A reward requires a block accepted by the Bitcoin network. It matures after 100 blocks.</p></details></div></section>
+    <section class="faq-section wrap" id="faq" aria-labelledby="faq-title"><div class="faq-intro"><h2 id="faq-title">FAQ</h2></div><div class="faq-list"><details><summary>Is the pool available?<span>+</span></summary><p id="faq-availability">Pool status unconfirmed.</p></details><details><summary>Can I connect over the Internet?<span>+</span></summary><p>Yes. Use bdl-pool.duckdns.org: port 39991 for V1 or 36809 for V2.</p></details><details><summary>Does each share earn a reward?<span>+</span></summary><p>No. A reward requires a block accepted by the Bitcoin network. It matures after 100 blocks.</p></details></div></section>
   </main>
 
   <footer class="site-footer wrap"><div class="footer-top"><a class="brand" href="#accueil" aria-label="BDL Pool, home"><img src="../assets/brand.svg" width="34" height="34" alt=""><span>BDL<span class="brand-light">Pool</span></span></a><p>Solo Bitcoin pool</p><a href="https://github.com/bdlglua/bdl-pool" target="_blank" rel="noopener noreferrer">GitHub <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></a></div><div class="footer-bottom"><span>© BDL Pool</span><a href="https://github.com/bdlglua" target="_blank" rel="noopener noreferrer">bdlglua</a></div></footer>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <noscript>Enable JavaScript to load monitoring data and generate miner settings. Stratum V1 server: bdl-pool.duckdns.org:3333 and Stratum V2 server: bdl-pool.duckdns.org:3336 with public key: 9c9DhUCzDsSZaCgKJitKKcngq24FLrqfJ9kUQzhxLiiSvAGuhna</noscript>
+  <noscript>Enable JavaScript to load monitoring data and generate miner settings. Stratum V1 server: bdl-pool.duckdns.org:39991 and Stratum V2 server: bdl-pool.duckdns.org:36809 with public key: 9c9DhUCzDsSZaCgKJitKKcngq24FLrqfJ9kUQzhxLiiSvAGuhna</noscript>
 </body>
 </html>

@@ -173,7 +173,7 @@ h3 { font-size: 18px; margin-bottom: 0; }
 .faq-list summary::-webkit-details-marker { display: none; }
 .faq-list summary > span { color: var(--muted); font-size: 25px; font-weight: 400; line-height: 1; }
 .faq-list details[open] summary > span { transform: rotate(45deg); }
-.faq-list details > p { margin: 0; padding-bottom: 24px; font-size: 14px; color: var(--muted); line-height: 1.85; }
+.faq-list details > p { margin: 0; padding-bottom: 24px; font-size: 14px; color: var(--muted); line-height: 1.85; overflow-wrap: anywhere; }
 .site-footer { margin-top: 48px; border-top: 1px solid var(--line); }
 .footer-top { display: flex; align-items: center; gap: 24px; padding: 40px 0; }
 .footer-top > p { margin: 0 0 0 auto; color: var(--subtle); font-size: 14px; }

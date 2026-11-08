@@ -4,7 +4,7 @@
   const locale = en ? 'en-GB' : 'fr-FR';
   const t = (fr, english) => en ? english : fr;
   const $ = id => document.getElementById(id);
-  const base = String(window.BDL_POOL_CONFIG?.apiBaseUrl || 'https://bdl-pool.duckdns.org/api/v1').replace(/\/$/, '');
+  const base = String(window.BDL_POOL_CONFIG?.apiBaseUrl || 'https://bdl-pool.duckdns.org:36018/api/v1').replace(/\/$/, '');
   const addressPattern = /^(?:[13][1-9A-HJ-NP-Za-km-z]{25,34}|bc1[ac-hj-np-z02-9]{11,87})$/;
   const addressInText = /(?:[13][1-9A-HJ-NP-Za-km-z]{25,34}|bc1[ac-hj-np-z02-9]{11,87})/g;
   const pageSize = 10;
