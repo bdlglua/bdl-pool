@@ -9,10 +9,11 @@ par une requête API.
 L’accès public configuré passe par OpenPort sur le port 36018. Le relais
 transmet le flux HTTPS à Caddy sur le port local 443, puis Caddy transmet
 `/api/v1/*` à Python sur `127.0.0.1:8081`. Le certificat est renouvelé par
-Certbot avec validation DNS DuckDNS ; aucune redirection entrante du routeur
+Certbot avec délégation DNS-01 vers DuckDNS ; aucune redirection entrante du routeur
 n’est nécessaire après la migration.
 
 Pour installer les relais et préparer la migration : [OpenPort](../monitoring/OPENPORT.md).
+Pour configurer le domaine du pool et le sous-domaine HTTPS : [Domaine](../monitoring/DOMAIN.md).
 Une installation initiale de l’API utilise le mode direct avant cette migration.
 
 Pour mettre à jour l’API déjà installée, avec le compte `bdl` :
@@ -33,7 +34,7 @@ sont pas modifiés. Le port 8081 reste local.
 
 ## Endpoints
 
-Base : `https://bdl-pool.duckdns.org:36018/api/v1`
+Base : `https://api.bdl-pool.com:36018/api/v1`
 
 | GET | Réponse |
 | --- | --- |
@@ -50,8 +51,8 @@ Base : `https://bdl-pool.duckdns.org:36018/api/v1`
 Exemple avec une adresse utilisée pour miner :
 
 ```bash
-curl https://bdl-pool.duckdns.org:36018/api/v1/pool
-curl 'https://bdl-pool.duckdns.org:36018/api/v1/miners/VOTRE_ADRESSE_BTC/workers?limit=50&offset=0'
+curl https://api.bdl-pool.com:36018/api/v1/pool
+curl 'https://api.bdl-pool.com:36018/api/v1/miners/VOTRE_ADRESSE_BTC/workers?limit=50&offset=0'
 ```
 
 `address` est une adresse Bitcoin mainnet, sans suffixe de worker. Sa syntaxe est
@@ -127,7 +128,7 @@ ne sont pas écrits dans les journaux de l’API ; l’accès log Caddy n’est 
 ## Vérifier et mettre à jour
 
 ```bash
-curl -fsS https://bdl-pool.duckdns.org:36018/api/v1/health
+curl -fsS https://api.bdl-pool.com:36018/api/v1/health
 systemctl status bdl-pool-api bdl-pool-presence caddy --no-pager
 journalctl -u bdl-pool-api -n 20 --no-pager
 

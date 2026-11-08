@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "https://bdl-pool.duckdns.org:36018"
+      "url": "https://api.bdl-pool.com:36018"
     }
   ],
   "paths": {
