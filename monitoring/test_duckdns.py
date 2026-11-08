@@ -72,6 +72,12 @@ class DNSTests(unittest.TestCase):
                 dns.sync(SETTINGS, first=True)
         update.assert_not_called()
 
+    def test_health_wait_accepts_delayed_api_startup(self):
+        with patch.object(dns, 'health', side_effect=[False, False, True]) as health, patch.object(dns.time, 'sleep') as sleep:
+            self.assertTrue(dns.wait_health(SETTINGS))
+        self.assertEqual(health.call_count, 3)
+        self.assertEqual(sleep.call_count, 2)
+
 
 class MigrationTests(unittest.TestCase):
     def execute(self, failure=None):
@@ -104,7 +110,7 @@ class MigrationTests(unittest.TestCase):
             stack.enter_context(patch.object(migration, 'run', side_effect=run))
             stack.enter_context(patch.object(migration, 'install_dns_timer'))
             stack.enter_context(patch.object(migration.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0)))
-            stack.enter_context(patch.object(migration.dns, 'health', side_effect=lambda *_: next(health)))
+            stack.enter_context(patch.object(migration.dns, 'wait_health', side_effect=lambda *_, **kwargs: next(health)))
             sync = stack.enter_context(patch.object(migration.dns, 'sync'))
             stack.enter_context(patch.object(migration.dns, 'dig', return_value=[]))
             stack.enter_context(patch.object(sys, 'argv', ['migration']))

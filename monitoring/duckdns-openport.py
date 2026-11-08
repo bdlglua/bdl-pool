@@ -130,6 +130,15 @@ def health(config, address=None):
         return False
 
 
+def wait_health(config, maximum=30):
+    deadline = time.monotonic()+maximum
+    while time.monotonic() < deadline:
+        if health(config):
+            return True
+        time.sleep(.5)
+    return False
+
+
 def relay_ipv4(config):
     try:
         values = socket.getaddrinfo(config['relayHost'], config['apiPort'], socket.AF_INET, socket.SOCK_STREAM)

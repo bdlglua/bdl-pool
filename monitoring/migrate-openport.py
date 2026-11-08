@@ -173,7 +173,7 @@ def main():
             if DOMAIN not in FRAGMENT.read_text():
                 raise MigrationError('Fragment Caddy du pool inattendu.')
             settings = config(ports['api'], args.reset_token)
-            if not dns.health(settings):
+            if not dns.wait_health(settings, maximum=20):
                 raise MigrationError('HTTPS n’est plus confirmé à travers OpenPort. DNS conservé.')
             if not shutil.which('certbot') or not shutil.which('dig'):
                 run(['apt-get', 'update'], 'Préparation des paquets DNS et certificats')
@@ -200,7 +200,7 @@ def main():
                 dns.private_write(FRAGMENT, caddy_fragment().encode(), 0o644)
                 run(['runuser', '-u', 'caddy', '--', 'caddy', 'validate', '--config', '/etc/caddy/Caddyfile'], 'Validation de la configuration Caddy')
                 run(['systemctl', 'reload', 'caddy.service'], 'Chargement du certificat dans Caddy')
-                if not dns.health(settings):
+                if not dns.wait_health(settings):
                     raise MigrationError('Le certificat du relais n’est pas confirmé après rechargement.')
             except (MigrationError, OSError):
                 dns.private_write(FRAGMENT, original, 0o644)
@@ -214,7 +214,8 @@ def main():
             dns.private_write(API_CONFIG, (json.dumps(data, indent=2)+'\n').encode())
             os.chown(API_CONFIG, old.st_uid, old.st_gid)
             run(['systemctl', 'restart', 'bdl-pool-api.service'], 'Actualisation des adresses Stratum dans l’API')
-            if not dns.health(settings):
+            print('Attente de la réponse de l’API après redémarrage (jusqu’à 30 secondes).', flush=True)
+            if not dns.wait_health(settings):
                 raise MigrationError('L’API ne répond pas après sa mise à jour. DNS conservé.')
             install_dns_timer()
             run(['systemctl', 'enable', '--now', 'certbot.timer'], 'Activation du renouvellement des certificats')
