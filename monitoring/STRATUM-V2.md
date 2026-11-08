@@ -19,6 +19,41 @@ instance avec une option inconnue. Seul l'indicateur de compilation SV2 est
 extrait ; les identifiants RPC et le contenu de local.conf ne sont pas affichés.
 La version des sources locales est signalée séparément du binaire installé.
 
+## Recompiler le support V2
+
+Pour la révision locale `bef6dd2efa2ed803d77fb49fbc064666685cb742` diagnostiquée
+sans support V2 :
+
+```bash
+git -C /home/bdl/bdl-pool-site pull --ff-only
+bash /home/bdl/bdl-pool-site/monitoring/build-sv2.sh
+```
+
+Lancer avec le compte bdl, sans préfixer l'ensemble par sudo. Le script utilise
+sudo uniquement pour les paquets système et le remplacement du binaire.
+
+Il installe les dépendances, récupère cette même révision dans un dossier de
+compilation séparé, lance `./configure --enable-sv2`, puis `make -j1`. Le fichier
+local.conf et les sources d'origine ne sont pas modifiés. Une seule compilation
+peut s'exécuter à la fois. Si le support V2 est déjà confirmé dans le binaire,
+aucune recompilation n'est faite.
+
+Le candidat doit être un exécutable ELF et réussir `--testconfig` avec
+`sv2_compiled = 1`. Le binaire actuel est sauvegardé avant un remplacement par
+renommage atomique. Le binaire installé est revérifié et l'ancien est restauré si
+cette vérification échoue. Les secrets de configuration ne sont pas imprimés.
+Aucun service n'est redémarré à cette étape.
+
+Le résultat attendu est « SV2 compilé dans le binaire installé : oui ».
+L'emplacement des sources compilées et de la sauvegarde est aussi conservé dans
+`~/.local/state/bdl-pool-monitor/sv2-build.json`. Ce manifeste ne contient aucune clé.
+
+Les tests `python3 monitoring/test_build_sv2.py` vérifient l'orchestration avec des
+dépendances simulées et de petits binaires ELF : remplacement réussi, refus d'un
+candidat sans V2, retour arrière, conservation de la configuration et répétition
+sans réinstallation. La compilation réelle de CKPool reste vérifiée sur la VM
+avant installation du candidat.
+
 ## Configuration à terminer après diagnostic
 
 Le CKPool récent dispose d'un serveur SV2 natif, compilé avec libsodium et

@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 import re
 import subprocess
+import sys
 
 
 def capability(binary, config):
@@ -34,6 +35,7 @@ def main():
     parser.add_argument('--binary', default='/usr/local/bin/ckpool')
     parser.add_argument('--config', default='/home/bdl/mining/ckpool/local.conf')
     parser.add_argument('--source', default='/home/bdl/mining/ckpool')
+    parser.add_argument('--require-sv2', action='store_true', help='Return an error unless installed SV2 support is confirmed')
     args = parser.parse_args()
     enabled, message = capability(args.binary, args.config)
     print('SV2 compilé dans le binaire installé :', 'oui' if enabled is True else 'non' if enabled is False else 'indéterminé')
@@ -53,7 +55,8 @@ def main():
             print('Révision des sources locales :', revision)
     except (OSError, subprocess.SubprocessError):
         pass
+    return 1 if args.require_sv2 and enabled is not True else 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
