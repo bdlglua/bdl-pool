@@ -54,7 +54,43 @@ candidat sans V2, retour arrière, conservation de la configuration et répétit
 sans réinstallation. La compilation réelle de CKPool reste vérifiée sur la VM
 avant installation du candidat.
 
-## Configuration à terminer après diagnostic
+## Préparer les clés et la configuration
+
+Après la compilation réussie, toujours avec le compte bdl :
+
+```bash
+git -C /home/bdl/bdl-pool-site pull --ff-only
+python3 /home/bdl/bdl-pool-site/monitoring/configure-sv2.py
+```
+
+L'outil utilise les bibliothèques de la compilation enregistrée dans le manifeste.
+Il lance les tests natifs CKPool d'encodage de l'autorité et d'échange Noise, puis
+génère les clés avec l'implémentation Noise de CKPool. Il vérifie leur persistance
+par une seconde lecture et effectue un échange client/serveur en mémoire avec ces
+clés. Ce contrôle ne démarre pas le pool et ne nécessite pas un nœud synchronisé.
+
+Les fichiers privés sont conservés dans `~/.local/share/ckpool/sv2/`, dossier en
+mode 700, fichiers `authority.key` et `static.key` en mode 600. Une nouvelle
+exécution réutilise les mêmes clés. Des chemins persistants déjà configurés dans
+le dossier du compte sont conservés ; une configuration inattendue est refusée.
+
+Le candidat ajoute `sv2url: ["0.0.0.0:3336"]` et les deux chemins privés dans
+`/home/bdl/mining/ckpool/local.conf`. Les réglages V1 et RPC sont conservés. Le
+binaire installé doit valider ce candidat avec `--testconfig` avant remplacement.
+L'original est sauvegardé dans `local.conf.before-sv2-<date>` avec des droits 600.
+Le texte de commentaire placé après le premier objet JSON reste conservé.
+
+Seule la ligne **« Clé publique SV2 : … »** est à communiquer pour la configuration
+du site. Le résultat public est aussi enregistré localement dans
+`~/.local/state/bdl-pool-monitor/sv2-public.json`. Ne pas communiquer les fichiers
+de clés privées ou le contenu de local.conf.
+
+Aucun service n'est redémarré par cet outil. Les tests Python
+`python3 monitoring/test_configure_sv2.py` vérifient les transactions de fichiers
+avec un générateur simulé ; les contrôles cryptographiques réels s'exécutent sur
+la machine du pool avec les bibliothèques compilées.
+
+## Ouvrir l'accès V2 et terminer l'activation
 
 Le CKPool récent dispose d'un serveur SV2 natif, compilé avec libsodium et
 libsecp256k1. Le support doit être confirmé dans le binaire installé, pas seulement
@@ -62,7 +98,8 @@ dans les sources présentes sur le disque.
 
 Pour le protocole de minage SV2, le port prévu est **3336 TCP**. Le serveur doit
 écouter sur l'interface locale et la redirection Internet doit viser ce même port
-sur la VM. Le service Job Declaration, optionnel, n'est pas nécessaire pour ce
+sur la VM : TCP 3336 externe vers `192.168.1.2:3336`. Conserver la redirection V1
+sur TCP 3333. Le service Job Declaration, optionnel, n'est pas nécessaire pour ce
 premier accès au protocole de minage SV2.
 
 CKPool exige une clé publique d'autorité Noise dans l'URL du mineur. Les fichiers
