@@ -361,8 +361,7 @@
       document.querySelector(".menu-toggle").setAttribute("aria-label", t("Ouvrir le menu"));
     }
   });
-  // Derive the current section from all headings, not only the observer
-  // entries that changed. A short section near the footer must not select FAQ.
+  // Follow section headings and include the compact FAQ at the end of the page.
   const navigationLinks = [...document.querySelectorAll('.main-nav a[href^="#"]')];
   const navigationSections = navigationLinks.map((link) => $(link.hash.slice(1)));
   let navigationFrame = 0;
@@ -372,6 +371,9 @@
     let current = navigationSections[0];
     for (const section of navigationSections) {
       if (section.getBoundingClientRect().top <= offset + 12) current = section;
+    }
+    if (window.scrollY > 0 && window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2) {
+      current = navigationSections[navigationSections.length - 1];
     }
     for (const link of navigationLinks) {
       const selected = link.hash === "#" + current.id;

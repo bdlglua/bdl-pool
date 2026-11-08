@@ -165,7 +165,7 @@ h3 { font-size: 18px; margin-bottom: 0; }
 .miner-result dd { margin: 0; overflow-wrap: anywhere; }
 
 /* Accordion adapted from Crypgo / Home / Faq. */
-.faq-section { padding-top: 80px; min-height: calc(100svh - var(--anchor-offset)); }
+.faq-section { padding-top: 80px; }
 .faq-intro { text-align: center; margin-bottom: 36px; }
 .faq-list { max-width: 940px; margin-inline: auto; }
 .faq-list details { background: var(--panel); border-radius: 8px; padding-inline: 24px; margin-bottom: 16px; }
@@ -174,7 +174,7 @@ h3 { font-size: 18px; margin-bottom: 0; }
 .faq-list summary > span { color: var(--muted); font-size: 25px; font-weight: 400; line-height: 1; }
 .faq-list details[open] summary > span { transform: rotate(45deg); }
 .faq-list details > p { margin: 0; padding-bottom: 24px; font-size: 14px; color: var(--muted); line-height: 1.85; }
-.site-footer { margin-top: 90px; border-top: 1px solid var(--line); }
+.site-footer { margin-top: 48px; border-top: 1px solid var(--line); }
 .footer-top { display: flex; align-items: center; gap: 24px; padding: 40px 0; }
 .footer-top > p { margin: 0 0 0 auto; color: var(--subtle); font-size: 14px; }
 .footer-top > a:last-child { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; }
