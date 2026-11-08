@@ -21,6 +21,62 @@ ADDRESS = re.compile(r'(?:[13][1-9A-HJ-NP-Za-km-z]{25,34}|bc1[ac-hj-np-z02-9]{11
 WORKER = re.compile(r'[A-Za-z0-9._-]{1,128}')
 RATES = {'1m': 'hashrate1m', '5m': 'hashrate5m', '1h': 'hashrate1hr',
          '1d': 'hashrate1d', '7d': 'hashrate7d'}
+SOFTWARE = ('BDLMiner V2', 'NerdMiner V2', 'ESP-Miner', 'AxeOS', 'NerdQAxe',
+            'NerdAxe', 'cgminer', 'BFGMiner', 'Braiins OS', 'cpuminer', 'Antminer', 'Whatsminer')
+MODELS = ('M5StickC Plus2', 'M5StickC Plus', 'M5Stack CoreS3', 'M5Stack Core2',
+          'Bitaxe Gamma', 'Bitaxe Supra', 'Bitaxe Ultra', 'Bitaxe Hex', 'Bitaxe')
+
+
+def worker_identity(name):
+    if not isinstance(name, str) or not WORKER.fullmatch(name):
+        return None
+    match = re.fullmatch('('+ADDRESS.pattern+r')(?:[._]([A-Za-z0-9._-]{1,64}))?', name)
+    return (match[1], match[2]) if match else None
+
+
+def device_from_agent(agent):
+    """Only report a hardware model when it is explicitly advertised in Stratum."""
+    result = dict(model=None, software=None, version=None)
+    if not isinstance(agent, str) or len(agent) > 256:
+        return result
+    patterns = ((r'bdlminer\s*v?2', 'BDLMiner V2'), (r'nerdminer\s*v?2?', 'NerdMiner V2'),
+                (r'esp[- ]?miner', 'ESP-Miner'), (r'axeos', 'AxeOS'),
+                (r'nerdqaxe', 'NerdQAxe'), (r'nerdaxe', 'NerdAxe'),
+                (r'cgminer', 'cgminer'), (r'bfgminer', 'BFGMiner'),
+                (r'braiins(?:\s*os)?', 'Braiins OS'), (r'cpuminer', 'cpuminer'),
+                (r'antminer', 'Antminer'), (r'whatsminer', 'Whatsminer'))
+    for pattern, label in patterns:
+        match = re.search(pattern, agent, re.I)
+        if match:
+            result['software'] = label
+            version = re.search(r'^[ /v:_-]*(\d{1,3}(?:\.\d{1,3}){1,3}(?:[-+][A-Za-z0-9._-]{1,16})?)', agent[match.end():], re.I)
+            result['version'] = version[1] if version else None
+            break
+    for pattern, label in ((r'm5stickc\s*(?:plus\s*2|\+2)', 'M5StickC Plus2'),
+                           (r'm5stickc\s*(?:plus|\+)', 'M5StickC Plus'),
+                           (r'm5stack\s*core\s*s3', 'M5Stack CoreS3'),
+                           (r'm5stack\s*core\s*2', 'M5Stack Core2')):
+        if re.search(pattern, agent, re.I):
+            result['model'] = label
+            break
+    match = re.search(r'\bbitaxe(?:[ /_-]+(gamma|supra|ultra|hex))?\b', agent, re.I)
+    if match:
+        result['model'] = 'Bitaxe'+(' '+match[1].title() if match[1] else '')
+    for pattern, prefix in ((r'\bantminer[ /_-]+(s\d{1,2}[a-z]?(?:\s+(?:pro|xp|hydro|hyd))?)\b', 'Antminer '),
+                            (r'\bwhatsminer[ /_-]+(m\d{1,3}[a-z]?(?:\+{1,2})?)\b', 'Whatsminer ')):
+        match = re.search(pattern, agent, re.I)
+        if match:
+            result['model'] = prefix+match[1].upper()
+    return result
+
+
+def clean_device(value):
+    value = value if isinstance(value, dict) else {}
+    model, software, version = (value.get(key) for key in ('model', 'software', 'version'))
+    model = model if isinstance(model, str) and (model in MODELS or re.fullmatch(r'(?:Antminer S\d{1,2}[A-Z]?(?: (?:PRO|XP|HYDRO|HYD))?|Whatsminer M\d{1,3}[A-Z]?\+{0,2})', model)) else None
+    software = software if software in SOFTWARE else None
+    version = version if isinstance(version, str) and re.fullmatch(r'\d{1,3}(?:\.\d{1,3}){1,3}(?:[-+][A-Za-z0-9._-]{1,16})?', version) else None
+    return dict(model=model, software=software, version=version)
 
 
 class APIError(Exception):
@@ -141,6 +197,7 @@ class PoolAPI:
         self.snapshot = Path(config['snapshot'])
         self.logs = Path(config['logs'])
         self.public_key_file = Path(config['sv2Public'])
+        self.online_file = Path(config.get('onlineSnapshot', '/var/lib/bdl-pool-presence/online.json'))
         self.host = config.get('host', 'bdl-pool.duckdns.org')
         if not re.fullmatch(r'[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?', self.host):
             raise ValueError('Invalid public hostname')
@@ -228,9 +285,68 @@ class PoolAPI:
                     and (name == address or name.startswith((address + '.', address + '_')))):
                 workers.append(dict(name=name, **measurements(row)))
         workers.sort(key=lambda worker: worker['name'])
+        presence, clients = self.presence()
+        address_clients = [client for client in clients if client['address'] == address]
+        for worker in workers:
+            connected = [client for client in address_clients if client['name'] == worker['name']]
+            worker.update(online=bool(connected) if presence['available'] else None,
+                          connections=len(connected) if presence['available'] else None,
+                          devices=[client['device'] for client in connected],
+                          presenceUpdatedAt=presence['updatedAt'])
         result = dict(apiVersion='1', address=address, **freshness(epoch(modified), 180),
-                      workersActive=number(data.get('workers'), True), workersRecorded=len(workers), **measurements(data))
+                      workersActive=number(data.get('workers'), True), workersRecorded=len(workers), **measurements(data),
+                      connections=len(address_clients) if presence['available'] else None,
+                      presenceAvailable=presence['available'], presenceUpdatedAt=presence['updatedAt'])
         return result, workers
+
+    def presence(self):
+        data = {}
+        try:
+            data, _ = read_json(self.online_file)
+        except (FileNotFoundError, APIError):
+            pass
+        metadata = freshness(timestamp(data.get('updatedAt')), 45)
+        available = data.get('schemaVersion') == 1 and data.get('available') is True and not metadata['stale']
+        status = 'ok' if available else 'stale' if data.get('available') is True else 'unavailable'
+        if not available:
+            try:
+                node = self.pool()['node']
+                if node['initialBlockDownload'] is True and not node['stale']:
+                    status = 'syncing'
+            except APIError:
+                pass
+        rows = data.get('clients')
+        clients = []
+        if available and isinstance(rows, list) and len(rows) <= 2000:
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                identity = worker_identity(row.get('name'))
+                identifier = row.get('id')
+                if not identity or identity[0] != row.get('address') or not isinstance(identifier, str) or not re.fullmatch(r'[a-f0-9]{24}', identifier):
+                    continue
+                rates = row.get('hashrateHps') if isinstance(row.get('hashrateHps'), dict) else {}
+                clients.append(dict(id=identifier, address=identity[0], name=row['name'], worker=identity[1],
+                                    device=clean_device(row.get('device')), hashrateHps={period: number(rates.get(period)) for period in RATES},
+                                    bestShare=number(row.get('bestShare')), connectedAt=timestamp(row.get('connectedAt')),
+                                    lastShareAt=timestamp(row.get('lastShareAt'))))
+        elif available:
+            available, status = False, 'unavailable'
+        return dict(available=available, status=status, updatedAt=metadata['updatedAt'],
+                    checkedAt=timestamp(data.get('checkedAt')), stale=not available), clients
+
+    def online(self, limit, offset):
+        metadata, clients = self.presence()
+        public = []
+        for client in clients:
+            item = {key: value for key, value in client.items() if key not in ('address', 'name')}
+            item['addressMasked'] = client['address'][:6]+'…'+client['address'][-4:]
+            if item['worker']:
+                item['worker'] = ADDRESS.sub(lambda match: match[0][:6]+'…'+match[0][-4:], item['worker'])
+            public.append(item)
+        public.sort(key=lambda client: client['id'])
+        return dict(apiVersion='1', **metadata, total=len(public) if metadata['available'] else None,
+                    limit=limit, offset=offset, miners=public[offset:offset+limit])
 
     def dispatch(self, target):
         if len(target) > 2048:
@@ -245,8 +361,17 @@ class PoolAPI:
         if not path.startswith(prefix):
             raise APIError(404, 'not_found', 'Endpoint not found.')
         route = path[len(prefix):]
-        if query and not re.fullmatch(r'miners/[^/]+/workers', route):
+        paginated = route == 'online' or re.fullmatch(r'miners/[^/]+/workers', route)
+        if query and not paginated:
             raise APIError(400, 'invalid_query', 'This endpoint does not accept query parameters.')
+        if paginated:
+            if any(key not in ('limit', 'offset') or len(value) != 1 or not re.fullmatch(r'\d{1,6}', value[0]) for key, value in query.items()):
+                raise APIError(400, 'invalid_query', 'Use one integer limit and offset.')
+            limit, offset = int(query.get('limit', ['50'])[0]), int(query.get('offset', ['0'])[0])
+            if not 1 <= limit <= 200:
+                raise APIError(400, 'invalid_query', 'limit must be between 1 and 200.')
+        if route == 'online':
+            return self.online(limit, offset)
         if route == 'health':
             return dict(apiVersion='1', status='ok')
         if route == 'pool':
@@ -259,12 +384,6 @@ class PoolAPI:
             return json.loads(Path(__file__).with_name('openapi.json').read_text())
         parts = route.split('/')
         if len(parts) in (2, 3, 4) and parts[0] == 'miners' and (len(parts) == 2 or parts[2] == 'workers'):
-            if len(parts) == 3:
-                if any(key not in ('limit', 'offset') or len(value) != 1 or not re.fullmatch(r'\d{1,6}', value[0]) for key, value in query.items()):
-                    raise APIError(400, 'invalid_query', 'Use one integer limit and offset.')
-                limit, offset = int(query.get('limit', ['50'])[0]), int(query.get('offset', ['0'])[0])
-                if not 1 <= limit <= 200:
-                    raise APIError(400, 'invalid_query', 'limit must be between 1 and 200.')
             miner, workers = self.miner(parts[1])
             if len(parts) == 2:
                 return miner

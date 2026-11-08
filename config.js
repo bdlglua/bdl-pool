@@ -8,5 +8,6 @@ window.BDL_POOL_CONFIG = Object.freeze({
     authorityPublicKey: "9c9DhUCzDsSZaCgKJitKKcngq24FLrqfJ9kUQzhxLiiSvAGuhna" // Clé PUBLIQUE Noise uniquement.
   }),
   statusUrl: "https://raw.githubusercontent.com/bdlglua/bdl-pool/stats/status.json", // Relevés publics filtrés.
+  apiBaseUrl: "https://bdl-pool.duckdns.org/api/v1",
   pollIntervalMs: 60000
 });

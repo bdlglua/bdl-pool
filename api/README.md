@@ -37,6 +37,7 @@ Base : `https://bdl-pool.duckdns.org/api/v1`
 | `/pool` | Statistiques globales, état Bitcoin, dates et contrôles |
 | `/history` | Dernières mesures de hashrate disponibles |
 | `/stratum` | Adresse, ports, URL V1/V2 et clé publique V2 |
+| `/online` | Connexions autorisées : appareil, adresse abrégée, worker, hashrate et difficulté ; `limit=50&offset=0` |
 | `/miners/{address}` | Hashrates, shares et meilleure difficulté d’une adresse BTC |
 | `/miners/{address}/workers` | Workers de cette adresse ; `limit=50&offset=0` |
 | `/miners/{address}/workers/{worker}` | Détail d’un worker, nom complet ou suffixe |
@@ -77,6 +78,42 @@ Les hashrates sont exprimés en H/s. `bestShare` et `bestEver` sont des difficul
 n’est déduite de ces compteurs. Les IP, les mots de passe et les champs inconnus
 des fichiers sources sont exclus de toutes les réponses.
 
+## Connexions et appareils
+
+`bdl-pool-presence.service` interroge uniquement la commande locale **clients**
+sur `/run/ckpool/stratifier`, toutes les quinze secondes. Le protocole natif
+CKPool utilise une longueur little-endian sur quatre octets, suivie du message.
+Aucune commande n'est fournie par une requête HTTP. Le collecteur accepte
+uniquement les clients autorisés avec une adresse Bitcoin et un nom de worker
+valides. Une dernière share récente ne suffit pas pour déclarer un worker en ligne.
+
+Le collecteur enregistre des statistiques filtrées dans
+`/var/lib/bdl-pool-presence/online.json` (fichier 600, dossier 700). Les IP,
+extranonces et le user-agent brut ne sont jamais enregistrés. L'API publique
+`/online` ne renvoie que le début et la fin de l'adresse, le suffixe du worker
+et un identifiant opaque de connexion ; cet identifiant change après redémarrage
+du collecteur. La liste peut contenir plusieurs connexions pour le même worker.
+`bestShare` reprend la difficulté `bestdiff` de la connexion annoncée par CKPool.
+
+Les modèles d'appareil sont reconnus uniquement s'ils figurent dans le user-agent
+Stratum. Un `BDLMinerV2/2.5.4` ou `NerdMinerV2` seul identifie le logiciel ; le
+modèle physique reste inconnu. Ces identités sont déclaratives, pas une preuve
+d'identité du matériel. Les UAs inconnus donnent des valeurs nulles.
+
+`available: false`, `total: null` et une liste vide indiquent un état non confirmé.
+Un relevé de connexions de plus de 45 secondes n'est jamais présenté comme actuel.
+Quand CKPool répond et qu'aucun client autorisé n'existe, `available: true` et
+`total: 0` indiquent une liste réellement vide. Les endpoints par adresse ajoutent
+`presenceAvailable`, `presenceUpdatedAt`, `connections` et, pour chaque worker,
+`online` et `devices`. Sans présence fraîche, `online` et `connections` restent null.
+
+Après mise à jour, relancer `bash api/install.sh` sur le serveur pour installer le
+collecteur et recharger l'API. Ce collecteur n'attend pas le démarrage de CKPool :
+il reste actif pendant la synchronisation Bitcoin et signale l'attente. Il ne
+redémarre ni Bitcoin Core ni CKPool. Pour un autre chemin IPC, modifier
+`ckpoolSocket` dans `~/.config/bdl-pool-api/config.json`, puis redémarrer
+`bdl-pool-presence`. Aucun socket d'administration n'est exposé sur Internet.
+
 GET, HEAD et OPTIONS sont autorisés ; les écritures renvoient 405. CORS public
 (`*`), cache de cinq secondes et ETag. Pagination : limite 1–200, défaut 50.
 400 : paramètres invalides ; 404 : adresse/worker/endpoint absent ; 503 : source
@@ -87,11 +124,11 @@ ne sont pas écrits dans les journaux de l’API ; l’accès log Caddy n’est 
 
 ```bash
 curl -fsS https://bdl-pool.duckdns.org/api/v1/health
-systemctl status bdl-pool-api caddy --no-pager
+systemctl status bdl-pool-api bdl-pool-presence caddy --no-pager
 journalctl -u bdl-pool-api -n 20 --no-pager
 
 git -C /home/bdl/bdl-pool-site pull --ff-only
-sudo systemctl restart bdl-pool-api
+bash /home/bdl/bdl-pool-site/api/install.sh
 ```
 
 Tests sans Bitcoin ni CKPool : `python3 -m unittest discover -s api -p 'test_*.py'`.

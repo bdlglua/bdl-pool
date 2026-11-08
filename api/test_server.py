@@ -43,6 +43,7 @@ class APITests(unittest.TestCase):
                              dict(workername=OTHER+'.foreign', hashrate5m='9T', private='PRIVATE_TEST')])
         self.write(self.users/ADDRESS, self.user)
         self.service = api.PoolAPI(dict(snapshot=str(self.snapshot), logs=str(self.root/'logs'),
+                                       onlineSnapshot=str(self.root/'online.json'),
                                        sv2Public=str(self.public), host='bdl-pool.duckdns.org'))
         self.server = api.Server(('127.0.0.1', 0), self.service)
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)

@@ -54,6 +54,8 @@ if not logs.is_relative_to(home) or logs == home or any(c in str(logs) for c in 
 logs.mkdir(parents=True, exist_ok=True)
 settings = dict(snapshot=str(home/'.local/state/bdl-pool-monitor/repository/status.json'),
                 logs=str(logs), sv2Public=str(home/'.local/state/bdl-pool-monitor/sv2-public.json'),
+                onlineSnapshot='/var/lib/bdl-pool-presence/online.json',
+                ckpoolSocket='/run/ckpool/stratifier',
                 host=host, v1Port=3333, v2Port=3336)
 staged = destination.with_suffix('.tmp')
 staged.write_text(json.dumps(settings, indent=2)+'\n')
@@ -107,6 +109,36 @@ LimitNOFILE=256
 WantedBy=multi-user.target
 '''
 caddy.with_name('bdl-pool-api.service').write_text(unit)
+caddy.with_name('bdl-pool-presence.service').write_text('''[Unit]
+Description=BDL Pool filtered live connection statistics
+After=network.target
+
+[Service]
+Type=simple
+User=bdl
+Group=bdl
+Environment=PYTHONDONTWRITEBYTECODE=1
+WorkingDirectory=/home/bdl/bdl-pool-site/api
+ExecStart=/usr/bin/python3 /home/bdl/bdl-pool-site/api/presence.py --config /home/bdl/.config/bdl-pool-api/config.json
+Restart=on-failure
+RestartSec=5
+StateDirectory=bdl-pool-presence
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=tmpfs
+BindReadOnlyPaths=/home/bdl/bdl-pool-site/api
+BindReadOnlyPaths=/home/bdl/.config/bdl-pool-api
+RestrictAddressFamilies=AF_UNIX
+MemoryMax=128M
+TasksMax=16
+
+[Install]
+WantedBy=multi-user.target
+''')
 PY
 sudo -v
 if ! command -v caddy >/dev/null; then
@@ -114,8 +146,11 @@ if ! command -v caddy >/dev/null; then
   sudo apt-get install -y --no-install-recommends caddy
 fi
 sudo install -m 644 "$temporary/bdl-pool-api.service" /etc/systemd/system/bdl-pool-api.service
+sudo install -m 644 "$temporary/bdl-pool-presence.service" /etc/systemd/system/bdl-pool-presence.service
 sudo systemctl daemon-reload
+sudo systemctl enable bdl-pool-presence.service
 sudo systemctl enable bdl-pool-api.service
+sudo systemctl restart bdl-pool-presence.service
 sudo systemctl restart bdl-pool-api.service
 python3 - <<'PY'
 import json, time
@@ -165,5 +200,6 @@ host = json.load(open(sys.argv[1]))['host']
 print('API installée. Certificat HTTPS demandé automatiquement par Caddy.')
 print('Test public : https://'+host+'/api/v1/health')
 print('Les endpoints par adresse apparaissent après la première share enregistrée par CKPool.')
+print('Présence et identification des appareils : collecte locale toutes les 15 secondes.')
 print('Bitcoin Core et CKPool n’ont pas été redémarrés.')
 PY

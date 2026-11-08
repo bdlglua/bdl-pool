@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "BDL Pool API",
-    "version": "1.0.0",
-    "description": "Public, read-only pool and per-address CKPool statistics. Global snapshots update every five minutes; miner records follow CKPool. Check updatedAt/stale. HTTP 404 is expected until the first share has been recorded. Hashrates are H/s. No directory of miner addresses is exposed."
+    "version": "1.1.0",
+    "description": "Public, read-only pool and per-address CKPool statistics. Global snapshots update every five minutes; miner records follow CKPool. Check updatedAt/stale. HTTP 404 is expected until the first share has been recorded. Hashrates are H/s. No directory of miner addresses is exposed. Live authorised connections are collected every 15 seconds. Presence older than 45 seconds is unavailable. The online list masks addresses and removes address prefixes from worker names; per-address results use the supplied address. Devices are based on self-reported Stratum user-agents, with unknown models left null."
   },
   "servers": [
     {
@@ -434,6 +434,77 @@
           }
         }
       }
+    },
+    "/api/v1/online": {
+      "get": {
+        "summary": "Current authorised Stratum connections with masked Bitcoin addresses",
+        "description": "One row per connection. Fresh CKPool clients data is required; stale or unavailable presence returns available=false, total=null and no rows. Hardware models are only reported when advertised in the Stratum user-agent. No raw user-agent, client IP or full wallet address is exposed.",
+        "operationId": "getOnlineMiners",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 999999,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public measurements; unknown numbers are null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Online"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint, address or worker not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Statistics unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -561,6 +632,32 @@
               "null"
             ],
             "format": "date-time"
+          },
+          "online": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "connections": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "devices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Device"
+            }
+          },
+          "presenceUpdatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
           }
         },
         "required": [
@@ -569,7 +666,11 @@
           "shares",
           "bestShare",
           "bestEver",
-          "lastShareAt"
+          "lastShareAt",
+          "online",
+          "connections",
+          "devices",
+          "presenceUpdatedAt"
         ],
         "additionalProperties": false
       },
@@ -686,6 +787,23 @@
               "null"
             ],
             "format": "date-time"
+          },
+          "connections": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "presenceAvailable": {
+            "type": "boolean"
+          },
+          "presenceUpdatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
           }
         },
         "required": [
@@ -700,7 +818,10 @@
           "shares",
           "bestShare",
           "bestEver",
-          "lastShareAt"
+          "lastShareAt",
+          "connections",
+          "presenceAvailable",
+          "presenceUpdatedAt"
         ],
         "additionalProperties": false
       },
@@ -1082,6 +1203,208 @@
           "apiVersion",
           "v1",
           "v2"
+        ],
+        "additionalProperties": false
+      },
+      "Device": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "software": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "model",
+          "software",
+          "version"
+        ],
+        "additionalProperties": false
+      },
+      "OnlineMiner": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$"
+          },
+          "addressMasked": {
+            "type": "string",
+            "description": "Only the first 6 and last 4 address characters are exposed."
+          },
+          "worker": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "device": {
+            "$ref": "#/components/schemas/Device"
+          },
+          "hashrateHps": {
+            "type": "object",
+            "properties": {
+              "1m": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "5m": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "1h": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "1d": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "7d": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              }
+            },
+            "required": [
+              "1m",
+              "5m",
+              "1h",
+              "1d",
+              "7d"
+            ],
+            "additionalProperties": false
+          },
+          "bestShare": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "connectedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "lastShareAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "addressMasked",
+          "worker",
+          "device",
+          "hashrateHps",
+          "bestShare",
+          "connectedAt",
+          "lastShareAt"
+        ],
+        "additionalProperties": false
+      },
+      "Online": {
+        "type": "object",
+        "properties": {
+          "apiVersion": {
+            "const": "1"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "syncing",
+              "stale",
+              "unavailable"
+            ]
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "checkedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "total": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "miners": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnlineMiner"
+            }
+          }
+        },
+        "required": [
+          "apiVersion",
+          "available",
+          "status",
+          "updatedAt",
+          "checkedAt",
+          "stale",
+          "total",
+          "limit",
+          "offset",
+          "miners"
         ],
         "additionalProperties": false
       }

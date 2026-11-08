@@ -1,0 +1,48 @@
+.miners-section { padding-top: 80px; }
+.miners-refresh, .miners-pagination button { background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 7px 12px; font-size: 13px; }
+.miners-refresh:hover, .miners-pagination button:hover { color: var(--text); border-color: var(--subtle); }
+.miner-search { margin: 28px 0 0; padding: 24px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+.miner-search label { display: block; margin-bottom: 12px; font-size: 14px; }
+.miner-search-row { display: flex; gap: 12px; }
+.miner-search-row input { min-width: 0; flex: 1; background: var(--bg); border: 1px solid var(--line); border-radius: 7px; color: var(--text); padding: 12px 14px; font: inherit; font-size: 14px; }
+.miner-search-row input::placeholder { color: var(--subtle); }
+.miner-search-row input[aria-invalid="true"] { border-color: #e3a398; }
+.miner-search-row .button { flex-shrink: 0; font-size: 14px; }
+.miners-message { color: var(--muted); font-size: 13px; margin: 16px 0 0; }
+.miners-message.error { color: #ecb3a8; }
+.miner-statistics { margin-top: 28px; }
+.miner-detail-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.miner-detail-heading h3 { font-size: 18px; }
+#selected-miner-address { display: block; margin-top: 4px; font-size: 12px; color: var(--subtle); }
+.miners-updated { color: var(--subtle); font-size: 12px; }
+.miner-summary { gap: 16px; margin-bottom: 22px; }
+.miner-summary .metric { padding: 18px; }
+.miner-summary .metric-value { font-size: 24px; margin-bottom: 0; }
+.online-miners { margin-top: 40px; }
+.miners-table-wrap { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); overflow-x: auto; }
+.miners-table { width: 100%; min-width: 650px; border-collapse: collapse; text-align: left; font-size: 13px; }
+.miners-table th { font-weight: 400; color: var(--subtle); font-size: 12px; white-space: nowrap; }
+.miners-table th, .miners-table td { padding: 16px 18px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.miners-table tbody tr:last-child td { border-bottom: 0; }
+.miners-table td { max-width: 260px; overflow-wrap: anywhere; }
+.miners-table th:nth-last-child(-n+2), .miners-table td:nth-last-child(-n+2) { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.miners-table td.device-name { min-width: 170px; }
+.miners-table td small { display: block; margin-top: 4px; color: var(--subtle); font-size: 11px; }
+.miners-table .worker-state { color: var(--muted); white-space: nowrap; }
+.miners-table .worker-state.online { color: var(--text); }
+.miners-table .empty-row { text-align: center !important; padding-block: 24px; color: var(--subtle); }
+.miners-pagination { display: flex; align-items: center; gap: 12px; color: var(--subtle); font-size: 12px; }
+#personal-pagination { justify-content: flex-end; margin-top: 16px; }
+.online-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; }
+@media (max-width: 600px) {
+  .miners-section { padding-top: 60px; }
+  .miner-search { padding: 18px; }
+  .miner-search-row { flex-direction: column; }
+  .miner-search-row .button { justify-content: center; }
+  .miner-detail-heading { align-items: flex-start; flex-wrap: wrap; }
+  .miner-summary { gap: 12px; }
+  .miner-summary .metric { padding: 16px 12px; }
+  .miner-summary .metric-label { font-size: 12px; }
+  .miner-summary .metric-value { font-size: 22px; }
+  .online-footer { flex-wrap: wrap; }
+}
