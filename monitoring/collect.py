@@ -32,25 +32,115 @@ def hashrate(value):
     return number(float(match[1]) * 1000 ** power)
 
 
+def utc_timestamp(now=None):
+    return datetime.fromtimestamp(time.time() if now is None else now, timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')
+
+
+def filtered_node(data):
+    """Allowlist public measurements, including records read from disk."""
+    if not isinstance(data, dict):
+        return None
+    chain = data.get('chain')
+    blocks = number(data.get('blocks'), integer=True)
+    headers = number(data.get('headers'), integer=True)
+    progress = number(data.get('verificationProgress'))
+    syncing = data.get('initialBlockDownload')
+    if (chain not in ('main', 'test', 'testnet4', 'signet', 'regtest')
+            or blocks is None or headers is None or progress is None
+            or progress > 1 or type(syncing) is not bool):
+        return None
+    return dict(chain=chain, blocks=blocks, headers=headers,
+                verificationProgress=progress, initialBlockDownload=syncing)
+
+
 def node_info(cli):
     empty = dict(chain=None, blocks=None, headers=None,
-                 verificationProgress=None, initialBlockDownload=None)
+                 verificationProgress=None, initialBlockDownload=None, updatedAt=None)
+    for attempt in range(2):
+        try:
+            result = subprocess.run([cli, '-rpcclienttimeout=30', 'getblockchaininfo'],
+                                    capture_output=True, text=True, timeout=35, check=True)
+            data = json.loads(result.stdout)
+            node = filtered_node(dict(chain=data.get('chain'), blocks=data.get('blocks'),
+                                      headers=data.get('headers'),
+                                      verificationProgress=data.get('verificationprogress'),
+                                      initialBlockDownload=data.get('initialblockdownload')))
+            if node is None:
+                raise ValueError('Invalid node measurements')
+            node['updatedAt'] = utc_timestamp()
+            return node, 'ok'
+        except FileNotFoundError:
+            break
+        except (OSError, subprocess.SubprocessError, ValueError, AttributeError):
+            # Neither RPC error text nor credentials are copied to the public JSON.
+            if attempt == 0:
+                time.sleep(1)
+    print('Bitcoin Core : lecture indisponible après nouvelle tentative.', file=sys.stderr)
+    return empty, 'unavailable'
+
+
+def node_from_snapshot(previous, now):
+    """Extract an originally successful reading without refreshing its age."""
     try:
-        result = subprocess.run([cli, '-rpcclienttimeout=15', 'getblockchaininfo'],
-                                capture_output=True, text=True, timeout=20, check=True)
-        data = json.loads(result.stdout)
-        chain = data.get('chain')
-        progress = number(data.get('verificationprogress'))
-        empty.update(chain=chain if chain in ('main', 'test', 'testnet4', 'signet', 'regtest') else None,
-                     blocks=number(data.get('blocks'), integer=True),
-                     headers=number(data.get('headers'), integer=True),
-                     verificationProgress=progress if progress is not None and progress <= 1 else None,
-                     initialBlockDownload=data.get('initialblockdownload') if type(data.get('initialblockdownload')) is bool else None)
-        return empty, 'ok'
-    except (OSError, subprocess.SubprocessError, ValueError, AttributeError):
-        # Do not print stderr: another tool's error could contain local credentials.
-        print('Bitcoin Core : relevé indisponible (vérifier bitcoin-cli sous cet utilisateur).', file=sys.stderr)
-        return empty, 'unavailable'
+        if previous.get('source') not in ('live', 'snapshot'):
+            return None
+        check = previous.get('checks', {}).get('bitcoin')
+        if check == 'unavailable':
+            return None
+        data = previous.get('node', {})
+        node = filtered_node(data)
+        if node is None:
+            return None
+        stamp = data.get('updatedAt')
+        if not stamp and check != 'stale':
+            # Older successful snapshots used the collection timestamp.
+            stamp = previous.get('updatedAt')
+        observed = datetime.fromisoformat(stamp.replace('Z', '+00:00'))
+        if observed.tzinfo is None or observed.timestamp() > now + 60:
+            return None
+        node['updatedAt'] = observed.astimezone(timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')
+        return node
+    except (ValueError, TypeError, AttributeError):
+        return None
+
+
+def previous_node(path, now):
+    if not path:
+        return None
+    path = Path(path)
+    try:
+        node = node_from_snapshot(json.loads(path.read_text()), now)
+        if node is not None:
+            return node
+    except (OSError, ValueError):
+        pass
+    # Upgrade recovery: the older collector may already have overwritten its
+    # latest reading with nulls. Read bounded local history without modifying it.
+    if not (path.parent / '.git').is_dir():
+        return None
+    deadline = time.monotonic() + 6
+    try:
+        commits = subprocess.run(['git', '-C', str(path.parent), 'log', '-n', '32',
+                                  '--format=%H', '--', path.name], capture_output=True,
+                                 text=True, timeout=3, check=True).stdout.splitlines()
+        for commit in commits:
+            if time.monotonic() >= deadline:
+                break
+            if not re.fullmatch(r'[0-9a-f]{40,64}', commit):
+                continue
+            result = subprocess.run(['git', '-C', str(path.parent), 'show', f'{commit}:{path.name}'],
+                                    capture_output=True, text=True,
+                                    timeout=max(.01, deadline - time.monotonic()), check=True)
+            try:
+                node = node_from_snapshot(json.loads(result.stdout), now)
+            except ValueError:
+                continue
+            if node is not None:
+                print('Dernier relevé réussi du nœud récupéré depuis l’historique local.', file=sys.stderr)
+                return node
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return None
 
 
 def pool_status_path(config_path, explicit):
@@ -175,12 +265,17 @@ def main():
     parser.add_argument('--stratum-host', default='192.168.1.2')
     parser.add_argument('--stratum-port', type=int, default=3333)
     args = parser.parse_args()
-    now = time.time()
-    timestamp = datetime.fromtimestamp(now, timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')
     node, bitcoin = node_info(args.bitcoin_cli)
+    now = time.time()
+    if bitcoin != 'ok':
+        retained = previous_node(args.previous, now)
+        if retained is not None:
+            node, bitcoin = retained, 'stale'
     pool, statistics = pool_info(pool_status_path(args.config, args.pool_status), now)
-    stratum = stratum_check(args.stratum_host, args.stratum_port) if node['initialBlockDownload'] is False else 'not_checked'
-    pool['ready'] = node['chain'] == 'main' and node['initialBlockDownload'] is False and stratum == 'job_received'
+    stratum = stratum_check(args.stratum_host, args.stratum_port) if bitcoin == 'ok' and node['initialBlockDownload'] is False else 'not_checked'
+    pool['ready'] = bitcoin == 'ok' and node['chain'] == 'main' and node['initialBlockDownload'] is False and stratum == 'job_received'
+    now = time.time()
+    timestamp = utc_timestamp(now)
     history = history_from(args.previous, now) if args.previous else []
     if pool['hashrateHps'] is not None:
         history.append(dict(time=timestamp, hashrateHps=pool['hashrateHps']))

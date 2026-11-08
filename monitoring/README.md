@@ -27,10 +27,24 @@ absentes sont alors affichées « — ».
 ## Fonctionnement
 
 - Toutes les cinq minutes, le service appelle `/usr/local/bin/bitcoin-cli
-  -rpcclienttimeout=15 getblockchaininfo` sous `bdl`. Le cookie RPC reste local.
+  -rpcclienttimeout=30 getblockchaininfo` sous `bdl`. Une seconde tentative est
+  faite en cas d’échec (durée maximale des deux processus : environ 71 secondes).
+  Le cookie RPC reste local.
 - Il ne retient que la chaîne, les blocs, les en-têtes, la progression et l'état
-  de synchronisation. Une panne RPC donne des champs inconnus, sans republier
-  un ancien état comme s'il était récent.
+  de synchronisation. `node.updatedAt` indique la date de la lecture réussie,
+  indépendamment de la date de publication du relevé (`updatedAt`).
+  Si la lecture RPC échoue, les dernières mesures connues sont conservées avec
+  leur date d’origine et `checks.bitcoin: "stale"`. Les échecs successifs ne
+  rajeunissent jamais cette date. Le pool n’est alors jamais indiqué disponible.
+  Lors de la mise à jour depuis l’ancienne version, si le dernier relevé contient
+  déjà des valeurs vides, jusqu’à 32 relevés de l’historique Git local sont
+  consultés pour récupérer une mesure réussie avec sa vraie date (recherche
+  limitée à six secondes). Sans mesure précédente valide, les champs restent inconnus.
+- Le navigateur conserve également les dernières mesures publiques du nœud,
+  pour garder la progression visible pendant les échecs de lecture ou de réseau,
+  y compris après rechargement. Leur date est affichée et les données anciennes
+  sont signalées. Une réponse de cache plus ancienne ne remplace pas une mesure
+  plus récente. Ni adresse de portefeuille ni identifiant n’est enregistré.
 - Le `logdir` est lu dans `/home/bdl/mining/ckpool/local.conf`, le fichier utilisé par le service CKPool ; s'il est relatif,
   le dossier de travail du service CKPool puis le dossier de sa configuration
   sont recherchés. Le fichier attendu est `logs/pool/pool.status` dans le cas présent.
@@ -57,6 +71,16 @@ absentes sont alors affichées « — ».
 
 Les statistiques deviennent publiques, comme le site. Le timer fonctionne après
 redémarrage et n'a pas besoin d'une session SSH ouverte.
+
+## Mettre à jour le collecteur installé
+
+```bash
+git -C /home/bdl/bdl-pool-site pull --ff-only
+sudo systemctl start bdl-pool-monitor.service
+```
+
+La collecte et la publication peuvent prendre environ une minute lorsque Bitcoin
+Core répond lentement. Le timer reste configuré toutes les cinq minutes.
 
 ## Vérifier / arrêter
 
