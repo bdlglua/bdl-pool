@@ -108,3 +108,34 @@ certificat et son renouvellement avant de modifier l’adresse HTTPS publique.
 Le flux Stratum V2 conserve son chiffrement Noise. Le relais du fournisseur
 reste un service tiers : sa conservation effective des ports est vérifiée par
 les deux essais, sans promesse de disponibilité ou de conservation à vie.
+
+## Basculer DuckDNS et préparer le renouvellement HTTPS
+
+Après installation et validation du relais API :
+
+```bash
+git -C /home/bdl/bdl-pool-site pull --ff-only
+sudo python3 /home/bdl/bdl-pool-site/monitoring/migrate-openport.py
+```
+
+Le jeton DuckDNS est demandé dans le terminal avec saisie masquée. Le retrouver
+sur le tableau de bord DuckDNS, puis le saisir uniquement sur le serveur.
+Il reste dans `/etc/bdl-pool-openport/duckdns.json`, lisible seulement par root.
+`--reset-token` permet de remplacer localement un ancien jeton.
+
+Le script installe Certbot et dig, obtient un certificat par DNS-01, puis teste
+son renouvellement avec l’autorité de test. Les hooks sont copiés sous
+`/usr/local/libexec/` avec propriétaire root. Caddy charge le certificat validé ;
+les futures mises à jour de l’API conservent ce mode de renouvellement.
+Un timer met ensuite DuckDNS à jour vers l’IPv4 du relais vérifié en HTTPS,
+toujours avec une adresse explicite. L’ancien enregistrement IPv6 est retiré.
+Aucune mise à jour ne revient automatiquement à l’IP du domicile.
+
+Une ancienne tâche DuckDNS concurrente détectée interrompt la migration avant
+la modification DNS ; son contenu et ses jetons ne sont pas affichés.
+Les sauvegardes et le journal restent privés sur le serveur. Bitcoin Core,
+CKPool et les identités des relais restent en place.
+
+Après confirmation de la nouvelle API depuis Internet, le site utilise les
+ports publics attribués. Les anciennes redirections entrantes Freebox peuvent
+alors être retirées ; les connexions OpenPort sont sortantes.
