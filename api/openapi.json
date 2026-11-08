@@ -1,0 +1,1090 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "BDL Pool API",
+    "version": "1.0.0",
+    "description": "Public, read-only pool and per-address CKPool statistics. Global snapshots update every five minutes; miner records follow CKPool. Check updatedAt/stale. HTTP 404 is expected until the first share has been recorded. Hashrates are H/s. No directory of miner addresses is exposed."
+  },
+  "servers": [
+    {
+      "url": "https://bdl-pool.duckdns.org"
+    }
+  ],
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "summary": "API process health (not mining availability)",
+        "operationId": "getHealth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Public measurements; unknown numbers are null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint, address or worker not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Statistics unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pool": {
+      "get": {
+        "summary": "Global pool and Bitcoin snapshot",
+        "operationId": "getPool",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Public measurements; unknown numbers are null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pool"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint, address or worker not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Statistics unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/history": {
+      "get": {
+        "summary": "Available hashrate history",
+        "operationId": "getHistory",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Public measurements; unknown numbers are null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/History"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint, address or worker not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Statistics unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stratum": {
+      "get": {
+        "summary": "Public Stratum connection parameters",
+        "operationId": "getStratum",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Public measurements; unknown numbers are null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stratum"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint, address or worker not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Statistics unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/miners/{address}": {
+      "get": {
+        "summary": "Statistics for one Bitcoin address",
+        "operationId": "getMiner",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "description": "Bitcoin mainnet address without a worker suffix. Format validation only.",
+            "schema": {
+              "type": "string",
+              "maxLength": 90
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public measurements; unknown numbers are null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Miner"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint, address or worker not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Statistics unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/miners/{address}/workers": {
+      "get": {
+        "summary": "Paginated workers for one address",
+        "operationId": "getWorkers",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "description": "Bitcoin mainnet address without a worker suffix. Format validation only.",
+            "schema": {
+              "type": "string",
+              "maxLength": 90
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 999999,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public measurements; unknown numbers are null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workers"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint, address or worker not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Statistics unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/miners/{address}/workers/{worker}": {
+      "get": {
+        "summary": "Statistics for one worker",
+        "operationId": "getWorkerResult",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "description": "Bitcoin mainnet address without a worker suffix. Format validation only.",
+            "schema": {
+              "type": "string",
+              "maxLength": 90
+            }
+          },
+          {
+            "name": "worker",
+            "in": "path",
+            "required": true,
+            "description": "Full worker name, or an unambiguous suffix after . or _.",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public measurements; unknown numbers are null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkerResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint, address or worker not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Statistics unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/openapi.json": {
+      "get": {
+        "summary": "OpenAPI document",
+        "operationId": "getOpenAPI",
+        "responses": {
+          "200": {
+            "description": "OpenAPI 3.1 document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "apiVersion": {
+            "type": "string",
+            "const": "1"
+          },
+          "status": {
+            "const": "ok"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "Worker": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "hashrateHps": {
+            "type": "object",
+            "properties": {
+              "1m": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "5m": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "1h": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "1d": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "7d": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              }
+            },
+            "required": [
+              "1m",
+              "5m",
+              "1h",
+              "1d",
+              "7d"
+            ],
+            "additionalProperties": false
+          },
+          "shares": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "bestShare": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "bestEver": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "lastShareAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "name",
+          "hashrateHps",
+          "shares",
+          "bestShare",
+          "bestEver",
+          "lastShareAt"
+        ],
+        "additionalProperties": false
+      },
+      "Miner": {
+        "type": "object",
+        "properties": {
+          "apiVersion": {
+            "type": "string",
+            "const": "1"
+          },
+          "address": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "ageSeconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "workersActive": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "workersRecorded": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "hashrateHps": {
+            "type": "object",
+            "properties": {
+              "1m": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "5m": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "1h": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "1d": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "7d": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              }
+            },
+            "required": [
+              "1m",
+              "5m",
+              "1h",
+              "1d",
+              "7d"
+            ],
+            "additionalProperties": false
+          },
+          "shares": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "bestShare": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "bestEver": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "lastShareAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "address",
+          "updatedAt",
+          "ageSeconds",
+          "stale",
+          "workersActive",
+          "workersRecorded",
+          "hashrateHps",
+          "shares",
+          "bestShare",
+          "bestEver",
+          "lastShareAt"
+        ],
+        "additionalProperties": false
+      },
+      "Workers": {
+        "type": "object",
+        "properties": {
+          "apiVersion": {
+            "type": "string",
+            "const": "1"
+          },
+          "address": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "workers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Worker"
+            }
+          }
+        },
+        "required": [
+          "apiVersion",
+          "address",
+          "updatedAt",
+          "stale",
+          "total",
+          "limit",
+          "offset",
+          "workers"
+        ],
+        "additionalProperties": false
+      },
+      "WorkerResult": {
+        "type": "object",
+        "properties": {
+          "apiVersion": {
+            "type": "string",
+            "const": "1"
+          },
+          "address": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "worker": {
+            "$ref": "#/components/schemas/Worker"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "address",
+          "updatedAt",
+          "stale",
+          "worker"
+        ],
+        "additionalProperties": false
+      },
+      "Pool": {
+        "type": "object",
+        "properties": {
+          "apiVersion": {
+            "type": "string",
+            "const": "1"
+          },
+          "source": {
+            "enum": [
+              "snapshot",
+              "live"
+            ]
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "ageSeconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "pool": {
+            "type": "object",
+            "properties": {
+              "hashrateHps": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "workers": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "bestShare": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "blocksFound": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "readyAtLastCheck": {
+                "type": "boolean",
+                "description": "Fresh monitoring confirmed a Stratum V1 job at the last check. This is not a live V2 check."
+              }
+            },
+            "required": [
+              "hashrateHps",
+              "workers",
+              "bestShare",
+              "blocksFound",
+              "readyAtLastCheck"
+            ],
+            "additionalProperties": false
+          },
+          "node": {
+            "type": "object",
+            "properties": {
+              "blocks": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "headers": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "chain": {
+                "enum": [
+                  "main",
+                  "test",
+                  "testnet4",
+                  "signet",
+                  "regtest",
+                  null
+                ]
+              },
+              "verificationProgress": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 1
+              },
+              "initialBlockDownload": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "updatedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "ageSeconds": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "stale": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "blocks",
+              "headers",
+              "chain",
+              "verificationProgress",
+              "initialBlockDownload",
+              "updatedAt",
+              "ageSeconds",
+              "stale"
+            ],
+            "additionalProperties": false
+          },
+          "checks": {
+            "type": "object",
+            "properties": {
+              "bitcoin": {
+                "type": "string"
+              },
+              "poolStats": {
+                "type": "string"
+              },
+              "stratum": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "bitcoin",
+              "poolStats",
+              "stratum"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "apiVersion",
+          "source",
+          "updatedAt",
+          "ageSeconds",
+          "stale",
+          "pool",
+          "node",
+          "checks"
+        ],
+        "additionalProperties": false
+      },
+      "History": {
+        "type": "object",
+        "properties": {
+          "apiVersion": {
+            "type": "string",
+            "const": "1"
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "points": {
+            "type": "array",
+            "maxItems": 288,
+            "items": {
+              "type": "object",
+              "properties": {
+                "time": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "hashrateHps": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "time",
+                "hashrateHps"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "apiVersion",
+          "updatedAt",
+          "points"
+        ],
+        "additionalProperties": false
+      },
+      "Stratum": {
+        "type": "object",
+        "properties": {
+          "apiVersion": {
+            "type": "string",
+            "const": "1"
+          },
+          "v1": {
+            "type": "object",
+            "properties": {
+              "host": {
+                "type": "string"
+              },
+              "port": {
+                "type": "integer"
+              },
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "host",
+              "port",
+              "url"
+            ],
+            "additionalProperties": false
+          },
+          "v2": {
+            "type": "object",
+            "properties": {
+              "configured": {
+                "type": "boolean"
+              },
+              "host": {
+                "type": "string"
+              },
+              "port": {
+                "type": "integer"
+              },
+              "authorityPublicKey": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "availability": {
+                "const": "not_verified"
+              }
+            },
+            "required": [
+              "configured",
+              "host",
+              "port",
+              "authorityPublicKey",
+              "url",
+              "availability"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "apiVersion",
+          "v1",
+          "v2"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}
