@@ -1,7 +1,7 @@
 /* Paramètres publics uniquement : jamais de clé privée ni d’identifiants RPC. */
 window.BDL_POOL_CONFIG = Object.freeze({
   publicPort: 39991,
-  publicHost: "bdl-pool.com", // Nom public dirigé vers le relais OpenPort.
+  publicHost: "stratum.bdl-pool.com", // Adresse de minage, distincte du site web.
   sv2: Object.freeze({
     enabled: true, // Paramètres de connexion disponibles ; disponibilité à vérifier séparément.
     publicPort: 36809,

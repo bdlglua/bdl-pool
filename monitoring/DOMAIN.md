@@ -1,6 +1,7 @@
 # Domaine du pool
 
-Le minage utilise `bdl-pool.com` ; l’API utilise `api.bdl-pool.com`.
+Le site utilise `https://bdl-pool.com/`, le minage `stratum.bdl-pool.com`
+et l’API `api.bdl-pool.com`.
 Les ports OpenPort et la clé publique Noise restent ceux déjà installés.
 Le site continue à être hébergé sur GitHub Pages.
 
@@ -10,14 +11,13 @@ Ajouter les enregistrements suivants, avec le TTL proposé :
 
 | Type | Host | Value |
 | --- | --- | --- |
-| A | `@` | `193.26.115.30` |
+| CNAME | `stratum` | `openport.pw.` |
 | CNAME | `api` | `openport.pw.` |
 | CNAME | `_acme-challenge.api` | `_acme-challenge.bdl-pool.duckdns.org.` |
 
-L’adresse IPv4 est celle d’OpenPort, vérifiée lors de la configuration.
 Northwest demande le point final dans les valeurs CNAME.
-Si le fournisseur change d’IPv4, l’enregistrement A du pool devra être actualisé.
-Le CNAME de l’API suit automatiquement le nom du relais.
+Les CNAME de Stratum et de l’API suivent automatiquement le nom du relais.
+Le domaine principal est réservé au site GitHub Pages.
 
 Conserver les autres enregistrements, notamment MX, SPF, DKIM, DMARC et les TXT
 `_acme-challenge` de Northwest. Ne pas ajouter de CNAME sur ce dernier nom :
@@ -55,4 +55,29 @@ Après succès, faire vérifier depuis Internet :
 https://api.bdl-pool.com:36018/api/v1/health
 ```
 
-Les adresses du site sont publiées après cette vérification.
+## Site GitHub Pages sur le domaine principal
+
+Le fichier `CNAME` à la racine du dépôt contient `bdl-pool.com`. La publication
+GitHub Pages utilise la branche `main`, dossier `/`. Vérifier que Settings →
+Pages → Custom domain contient ce nom avant de modifier le DNS du site.
+
+Chez Northwest, remplacer l’ancien A `@ → 193.26.115.30` par les quatre A de
+GitHub Pages, et ajouter le CNAME `www` :
+
+| Type | Host | Value |
+| --- | --- | --- |
+| A | `@` | `185.199.108.153` |
+| A | `@` | `185.199.109.153` |
+| A | `@` | `185.199.110.153` |
+| A | `@` | `185.199.111.153` |
+| CNAME | `www` | `bdlglua.github.io.` |
+
+Conserver les CNAME `stratum`, `api` et `_acme-challenge.api` ainsi que les
+enregistrements de messagerie. Une fois le certificat GitHub Pages disponible,
+activer Enforce HTTPS dans les paramètres Pages.
+
+Les anciens liens `bdlglua.github.io/bdl-pool/` redirigent vers le nouveau
+domaine. Les liens internes et les pages françaises et anglaises utilisent
+les mêmes chemins à partir de la racine du nouveau domaine.
+
+Documentation : [domaine personnalisé GitHub Pages](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site).

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Use bdl-pool.com for Stratum and api.bdl-pool.com for the HTTPS API."""
+"""Use dedicated Stratum/API hosts so bdl-pool.com can serve GitHub Pages."""
 import argparse
 import fcntl
 import importlib.util
@@ -13,7 +13,8 @@ import subprocess
 import sys
 import time
 
-DOMAIN = 'bdl-pool.com'
+SITE_DOMAIN = 'bdl-pool.com'
+DOMAIN = 'stratum.bdl-pool.com'
 API_DOMAIN = 'api.bdl-pool.com'
 OLD_DOMAIN = 'bdl-pool.duckdns.org'
 TARGET = '_acme-challenge.'+OLD_DOMAIN
@@ -50,7 +51,7 @@ def run(command, label):
 
 def nameservers(dns):
     result = []
-    for name in dns.dig(DOMAIN, 'NS'):
+    for name in dns.dig(SITE_DOMAIN, 'NS'):
         if not re.fullmatch(r'[A-Za-z0-9.-]{1,253}', name):
             continue
         for address in dns.dig(name, 'A'):
@@ -61,7 +62,7 @@ def nameservers(dns):
             except ValueError:
                 pass
     if not result:
-        raise DomainError('Serveurs DNS de '+DOMAIN+' introuvables. Attendre la propagation DNS.')
+        raise DomainError('Serveurs DNS de '+SITE_DOMAIN+' introuvables. Attendre la propagation DNS.')
     return list(dict.fromkeys(result))[:12]
 
 
@@ -77,10 +78,9 @@ def check_addresses(dns, settings):
     address = dns.relay_ipv4(settings)  # Includes a verified TLS/health probe.
     for server in nameservers(dns):
         for host in (DOMAIN, API_DOMAIN):
-            if host == API_DOMAIN:
-                aliases = [v.lower().rstrip('.') for v in dns.dig(host, 'CNAME', server)]
-                if aliases != ['openport.pw']:
-                    raise DomainError('CNAME manquant : api → openport.pw.')
+            aliases = [v.lower().rstrip('.') for v in dns.dig(host, 'CNAME', server)]
+            if aliases != ['openport.pw']:
+                raise DomainError('CNAME manquant : '+host+' → openport.pw.')
             addresses = []
             for value in dns.dig(host, 'A', server):
                 try:
@@ -89,7 +89,7 @@ def check_addresses(dns, settings):
                         addresses.append(str(parsed))
                 except ValueError:
                     pass  # dig may also print the CNAME followed by its A record.
-            if host == API_DOMAIN and not addresses:
+            if not addresses:
                 # An authoritative server returns the alias but may not recurse
                 # into openport.pw. Check the alias there, then its public answer.
                 aliases = [v.lower().rstrip('.') for v in dns.dig(host, 'CNAME', server)]
@@ -182,7 +182,8 @@ def activate(dns, ports, previous):
     for index, (path, content) in enumerate(originals.items()):
         if content is not None:
             dns.private_write(backup/(str(index)+'-'+path.name), content)
-    public = dict(previous, domain=DOMAIN, apiDomain=API_DOMAIN, previousDomain=OLD_DOMAIN,
+    previous_domain = previous.get('domain') if previous.get('domain') != DOMAIN else previous.get('previousDomain', SITE_DOMAIN)
+    public = dict(previous, domain=DOMAIN, siteDomain=SITE_DOMAIN, apiDomain=API_DOMAIN, previousDomain=previous_domain,
                   v1Port=ports['v1'], v2Port=ports['v2'], apiPublicPort=ports['api'],
                   managedTLS=True, tlsDirectory=str(TLS))
     health = dict(domain=API_DOMAIN, relayHost='openport.pw', apiPort=ports['api'])
@@ -223,7 +224,7 @@ def install(dns):
             raise DomainError('Outil absent : '+command+'. Installer d’abord la migration OpenPort existante.')
     ports = routes()
     previous = json.loads((ROOT/'public.json').read_text())
-    if previous.get('domain') not in (OLD_DOMAIN, DOMAIN) or previous.get('managedTLS') is not True:
+    if previous.get('domain') not in (OLD_DOMAIN, SITE_DOMAIN, DOMAIN) or previous.get('managedTLS') is not True:
         raise DomainError('La migration OpenPort HTTPS précédente doit être terminée.')
     settings = dns.settings()
     if settings['apiPort'] != ports['api']:

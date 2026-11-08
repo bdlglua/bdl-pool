@@ -113,7 +113,7 @@ les paramètres publics dans `config.js` : `sv2.enabled`, `sv2.stratumPort`,
 `sv2.publicPort` et `sv2.authorityPublicKey`. Le navigateur produit alors :
 
 ```text
-stratum2+tcp://bdl-pool.com:36809/CLE_PUBLIQUE_D_AUTORITE
+stratum2+tcp://stratum.bdl-pool.com:36809/CLE_PUBLIQUE_D_AUTORITE
 ```
 
 Cet exemple contient un emplacement réservé, pas une clé de production.

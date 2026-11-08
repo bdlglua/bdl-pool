@@ -48,10 +48,22 @@ class DelegationTests(unittest.TestCase):
     def test_foreign_address_or_ipv6_does_not_pass_preflight(self):
         for bad_a, bad_aaaa in ((['9.9.9.9'], []), (['1.1.1.1'], ['2606:4700:4700::1111'])):
             fake = SimpleNamespace(relay_ipv4=Mock(return_value='1.1.1.1'),
-                                   dig=Mock(side_effect=lambda _, kind, server=None: bad_a if kind == 'A' else bad_aaaa))
+                                   dig=Mock(side_effect=lambda _, kind, server=None:
+                                            bad_a if kind == 'A' else ['openport.pw.'] if kind == 'CNAME' else bad_aaaa))
             with patch.object(domain, 'nameservers', return_value=['8.8.8.8']):
                 with self.assertRaises(domain.DomainError):
                     domain.check_addresses(fake, {})
+
+    def test_website_apex_is_not_required_to_point_to_the_mining_relay(self):
+        def dig(host, kind, server=None):
+            if host == domain.SITE_DOMAIN:
+                raise AssertionError('Website DNS must not be treated as a mining endpoint')
+            if kind == 'CNAME':
+                return [domain.TARGET+'.'] if host.startswith('_acme-challenge') else ['openport.pw.']
+            return ['1.1.1.1'] if kind == 'A' else []
+        fake = SimpleNamespace(dig=dig, relay_ipv4=Mock(return_value='1.1.1.1'))
+        with patch.object(domain, 'nameservers', return_value=['8.8.8.8']):
+            domain.check_addresses(fake, {})
 
     def test_auth_and_cleanup_only_modify_delegate_txt_and_never_print_credentials(self):
         settings = dict(domain=domain.OLD_DOMAIN, token='PRIVATE_TEST_TOKEN')
@@ -93,12 +105,12 @@ class ActivationTests(unittest.TestCase):
         fake = SimpleNamespace(private_write=dns.private_write, DNSError=dns.DNSError, wait_health=Mock(side_effect=health))
         return root, main, config, public, legacy, originals, fake
 
-    def activate(self, fixture):
+    def activate(self, fixture, previous=PREVIOUS):
         root, main, config, public, legacy, originals, fake = fixture
         with patch.object(domain, 'ROOT', root), patch.object(domain, 'FRAGMENT', main), patch.object(domain, 'LEGACY', legacy), \
              patch.object(domain, 'API_CONFIG', config), patch.object(domain.os, 'chown'), patch.object(domain, 'run') as run, \
              patch.object(domain.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0)), contextlib.redirect_stdout(io.StringIO()):
-            domain.activate(fake, PORTS, PREVIOUS)
+            domain.activate(fake, PORTS, previous)
         return run
 
     def test_activation_keeps_old_certificate_and_api_and_persists_split_hosts(self):
@@ -134,6 +146,19 @@ class ActivationTests(unittest.TestCase):
             self.activate(fixture)
         self.assertIn('unrelated', fixture[4].read_text())
         self.assertEqual(fixture[2].read_bytes(), fixture[5][fixture[2]])
+
+    def test_move_from_apex_to_stratum_keeps_api_certificate_and_supports_reinstall(self):
+        fixture = self.fixture([True, True, True])
+        previous = dict(PREVIOUS, domain=domain.SITE_DOMAIN, apiDomain=domain.API_DOMAIN)
+        self.activate(fixture, previous)
+        public = json.loads(fixture[3].read_text())
+        self.assertEqual(public['domain'], 'stratum.bdl-pool.com')
+        self.assertEqual(public['previousDomain'], 'bdl-pool.com')
+        self.assertEqual(public['siteDomain'], 'bdl-pool.com')
+        self.assertEqual(public['apiDomain'], 'api.bdl-pool.com')
+        settings = json.loads(fixture[2].read_text())
+        self.assertEqual(settings['host'], 'stratum.bdl-pool.com')
+        self.assertEqual(settings['apiPublicPort'], 36018)
 
     def test_failed_renewal_test_never_activates_the_new_configuration(self):
         temporary = tempfile.TemporaryDirectory()
