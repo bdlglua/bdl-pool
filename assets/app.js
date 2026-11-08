@@ -6,6 +6,7 @@
   Object.assign(translations, {"Mise à jour automatique · ": "Automatic snapshot · ", " · toutes les 5 min, avec un délai possible de cache GitHub.": " · every 5 min; GitHub caching may delay display.", " · dernier relevé : ": " · last snapshot: ", "Nœud inaccessible": "Node unavailable", "Disponibilité à vérifier": "Availability unconfirmed", "Stratum répond, mais aucun travail n’a été confirmé par le contrôle automatique. Vérifiez les jobs et les shares dans votre mineur.": "Stratum responds, but the automatic check has not confirmed a mining job. Check jobs and shares on your miner.", "Pool disponible au dernier contrôle. Vérifiez les shares acceptées après connexion.": "Pool available at the last check. Verify accepted shares after connecting.", "Le relevé automatique indique un nœud synchronisé et un travail Stratum reçu lors du dernier contrôle. Vérifiez les shares acceptées sur votre mineur.": "The automatic snapshot shows a synced node and a Stratum job received at the last check. Verify accepted shares on your miner.", "Bitcoin Core ne répond pas au collecteur. Les données du nœud sont indisponibles.": "Bitcoin Core is not responding to the collector. Node data is unavailable.", "Dernier contrôle automatique : ": "Last automatic check: ", "Le pool attend la synchronisation du nœud.": "The pool is waiting for the node to sync.", "Actualisation automatique toutes les cinq minutes.": "Automatic updates every five minutes."});
   Object.assign(translations, {"En attente d’un relevé": "Waiting for a reading", "Actualisation en attente": "Update pending", "Dernière lecture réussie : ": "Last successful reading: ", " · actualisation en attente": " · update pending", "Valeurs conservées ; l’état actuel reste à confirmer.": "Saved readings; current status remains unconfirmed.", "Relevé ancien. ": "Old reading. ", "Aucun relevé du nœud n’est encore disponible.": "No node reading is available yet.", "La lecture du nœud est temporairement indisponible. La disponibilité du pool reste à confirmer.": "The node reading is temporarily unavailable. Pool availability remains unconfirmed."});
   Object.assign(translations, {"Vérifiez le protocole pris en charge par le firmware de votre mineur.": "Check which protocol your miner’s firmware supports.", "Stratum V2 n’est pas encore activé. Utilisez Stratum V1 pour le moment.": "Stratum V2 is not enabled yet. Use Stratum V1 for now.", "Stratum V2 : utilisez l’URL complète, clé publique incluse, avec un mineur compatible.": "Stratum V2: use the complete URL, including the public key, with a compatible miner.", "Le nœud est synchronisé. Vérifiez la réception de travail Stratum V2 dans votre mineur.": "The node is synced. Check that your miner receives Stratum V2 jobs.", "SERVEUR STRATUM V1": "STRATUM V1 SERVER", "Non activé": "Not enabled", "Copier l’URL Stratum": "Copy the Stratum URL", "Non utilisé": "Unused", "Protocole : ": "Protocol: ", "URL Stratum : ": "Stratum URL: ", "Port : ": "Port: ", "Mot de passe : ": "Password: "});
+  Object.assign(translations, {"Renseignez les champs séparés de votre mineur ou copiez l’URL complète.": "Fill in your miner’s separate fields or copy the full URL.", "Adresse : ": "Address: ", "Clé publique de chiffrement : ": "Public encryption key: "});
   const t = (text) => english ? (translations[text] || text) : text;
   const locale = english ? "en-GB" : "fr-FR";
   const config = window.BDL_POOL_CONFIG || {};
@@ -118,14 +119,16 @@
     const host = currentHost();
     const v2 = protocol === "v2";
     const inactive = v2 && !sv2Configured();
-    $("endpoint-host").textContent = inactive ? t("Non activé") : v2 ? currentUrl() || t("Non configuré") : host || t("Non configuré");
-    $("endpoint-host").classList.toggle("sv2-url", v2);
-    $("endpoint-label").textContent = v2 ? "URL STRATUM V2" : t("SERVEUR STRATUM V1");
+    $("endpoint-host").textContent = inactive ? t("Non activé") : host || t("Non configuré");
     $("endpoint-port").textContent = inactive ? "—" : currentPort();
+    $("endpoint-key-row").hidden = !v2;
+    $("endpoint-key").textContent = v2 && !inactive ? config.sv2.authorityPublicKey : "—";
     $("copy-host").disabled = !host || inactive;
-    $("copy-host").setAttribute("aria-label", v2 ? t("Copier l’URL Stratum") : t("Copier l’adresse du serveur"));
+    $("copy-port").disabled = !host || inactive;
+    $("copy-key").disabled = !v2 || inactive;
+    $("copy-url").disabled = !currentUrl();
     $("miner-form").querySelector("button[type=submit]").disabled = !host || inactive;
-    $("protocol-note").textContent = inactive ? t("Stratum V2 n’est pas encore activé. Utilisez Stratum V1 pour le moment.") : v2 ? t("Stratum V2 : utilisez l’URL complète, clé publique incluse, avec un mineur compatible.") : t("Vérifiez le protocole pris en charge par le firmware de votre mineur.");
+    $("protocol-note").textContent = inactive ? t("Stratum V2 n’est pas encore activé. Utilisez Stratum V1 pour le moment.") : v2 ? t("Renseignez les champs séparés de votre mineur ou copiez l’URL complète.") : t("Vérifiez le protocole pris en charge par le firmware de votre mineur.");
     $("endpoint-note").textContent = host
       ? t("Adresse publique du pool. Consultez son état avant de connecter un mineur.")
       : t("L’adresse publique du pool n’est pas encore configurée.");
@@ -294,7 +297,10 @@
     }
   }
   $("refresh-status").addEventListener("click", () => loadStatus(true));
-  $("copy-host").addEventListener("click", () => { const value = protocol === "v2" ? currentUrl() : currentHost(); if (value) copy(value); });
+  $("copy-host").addEventListener("click", () => { if (currentHost()) copy(currentHost()); });
+  $("copy-port").addEventListener("click", () => copy(String(currentPort())));
+  $("copy-key").addEventListener("click", () => { if (protocol === "v2" && sv2Configured()) copy(config.sv2.authorityPublicKey); });
+  $("copy-url").addEventListener("click", () => { if (currentUrl()) copy(currentUrl()); });
   document.querySelectorAll("[data-protocol]").forEach((button) => button.addEventListener("click", () => { protocol = button.dataset.protocol; clearResult(); renderEndpoint(); }));
   for (const id of ["btc-address", "worker-name"]) $(id).addEventListener("input", clearResult);
   $("miner-form").addEventListener("submit", (event) => {
@@ -317,11 +323,13 @@
       $(focus).focus();
       return;
     }
-    settings = { host, port: currentPort(), url: currentUrl(), protocol, username: address + (worker ? "." + worker : ""), password: protocol === "v2" ? null : "x" };
+    settings = { host, port: currentPort(), url: currentUrl(), protocol, authorityPublicKey: protocol === "v2" ? config.sv2.authorityPublicKey : null, username: address + (worker ? "." + worker : ""), password: protocol === "v2" ? null : "x" };
     $("result-url").textContent = settings.url;
     $("result-password").textContent = settings.password === null ? t("Non utilisé") : settings.password;
     $("result-host").textContent = settings.host;
     $("result-port").textContent = settings.port;
+    $("result-key-row").hidden = settings.authorityPublicKey === null;
+    $("result-key").textContent = settings.authorityPublicKey || "";
     $("result-user").textContent = settings.username;
     $("miner-result").hidden = false;
     $("miner-result").scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
@@ -329,8 +337,10 @@
   $("copy-settings").addEventListener("click", () => {
     if (!settings) return;
     copy(t("Protocole : ") + (settings.protocol === "v2" ? "Stratum V2" : "Stratum V1")
-      + "\n" + t("URL Stratum : ") + settings.url + "\n" + t("Serveur : ") + settings.host
-      + "\n" + t("Port : ") + settings.port + (english ? "\nUsername: " : "\nUtilisateur : ") + settings.username
+      + "\n" + t("URL Stratum : ") + settings.url + "\n" + t("Adresse : ") + settings.host
+      + "\n" + t("Port : ") + settings.port
+      + (settings.authorityPublicKey ? "\n" + t("Clé publique de chiffrement : ") + settings.authorityPublicKey : "")
+      + (english ? "\nUsername: " : "\nUtilisateur : ") + settings.username
       + "\n" + t("Mot de passe : ") + (settings.password === null ? t("Non utilisé") : settings.password));
   });
   document.querySelector(".menu-toggle").addEventListener("click", (event) => {

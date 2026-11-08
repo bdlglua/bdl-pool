@@ -144,10 +144,15 @@ h3 { font-size: 18px; margin-bottom: 0; }
 .endpoint-panel { display: flex; flex-direction: column; }
 .connection-grid .panel-heading { padding: 0 0 24px; }
 .endpoint-block { border: 1px solid #ffffff24; background: var(--bg); border-radius: 10px; padding: 19px; }
-.endpoint-value { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 0 18px; }
-.endpoint-value code { font-size: 27px; letter-spacing: .3px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.endpoint-port { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 15px; color: var(--subtle); font-size: 14px; }
-.endpoint-port code { color: var(--text); }
+.endpoint-fields { margin: 0; }
+.endpoint-field + .endpoint-field { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 16px; }
+.endpoint-field dt { color: var(--subtle); font-size: 13px; }
+.endpoint-field dd { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 0 0; }
+.endpoint-field code { min-width: 0; font-size: 20px; line-height: 1.5; overflow-wrap: anywhere; }
+.endpoint-field .icon-button { flex-shrink: 0; }
+.endpoint-key code { font-size: 13px; line-height: 1.8; }
+.endpoint-copy-url { display: flex; align-items: center; gap: 8px; margin-top: 20px; padding: 14px 0 0; border: 0; border-top: 1px solid var(--line); width: 100%; background: transparent; color: var(--primary); font-size: 13px; text-align: left; }
+.endpoint-copy-url:hover { color: var(--text); }
 .endpoint-note { color: var(--subtle); font-size: 13px; line-height: 1.75; margin: 16px 0 0; }
 .availability-note { display: flex; align-items: flex-start; gap: 10px; margin: 20px 0 24px; color: var(--amber); font-size: 13px; line-height: 1.7; }
 .availability-note .dot { margin-top: 9px; background: var(--amber); }
@@ -292,7 +297,8 @@ h3 { font-size: 18px; margin-bottom: 0; }
   .panel-foot { padding-inline: 20px; font-size: 10px; }
   .panel-foot > span:last-child { text-align: right; }
   .endpoint-panel, .setup-form { padding: 22px; }
-  .endpoint-value code { font-size: 24px; }
+  .endpoint-field code { font-size: 17px; }
+  .endpoint-key code { font-size: 12px; }
   .endpoint-block { padding: 16px; }
   .setup-form label { font-size: 13px; }
   .optional { font-size: 11px; }
@@ -311,4 +317,3 @@ h3 { font-size: 18px; margin-bottom: 0; }
 .protocol-selector button.selected { border-color: var(--primary); background: #99e39e12; color: var(--primary); }
 .protocol-selector button:hover { color: var(--text); }
 .protocol-note { margin: 0 0 24px; color: var(--subtle); font-size: 12px; line-height: 1.7; }
-.endpoint-value code.sv2-url { font-size: 14px; line-height: 1.8; letter-spacing: 0; }
