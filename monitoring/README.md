@@ -1,6 +1,7 @@
 # Suivi automatique — serveur
 
 Pour essayer un relais TCP gratuit sans modifier le pool : [essai de Bore](BORE.md).
+Pour tester des ports persistants chez le fournisseur choisi : [OpenPort.pw](OPENPORT.md).
 
 Le collecteur fonctionne avec Python 3 standard, Git, SSH, `flock` et systemd.
 Il s'exécute sous `bdl`, comme `bitcoin-cli`, et lit les fichiers CKPool sans
