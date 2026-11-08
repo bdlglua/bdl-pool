@@ -1,5 +1,7 @@
 # Suivi automatique — serveur
 
+Pour essayer un relais TCP gratuit sans modifier le pool : [essai de Bore](BORE.md).
+
 Le collecteur fonctionne avec Python 3 standard, Git, SSH, `flock` et systemd.
 Il s'exécute sous `bdl`, comme `bitcoin-cli`, et lit les fichiers CKPool sans
 modifier Bitcoin Core, CKPool, leur configuration ou les ports du routeur.
