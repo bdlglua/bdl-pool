@@ -363,7 +363,7 @@
   });
   // Derive the current section from all headings, not only the observer
   // entries that changed. A short section near the footer must not select FAQ.
-  const navigationLinks = [...document.querySelectorAll(".main-nav a")];
+  const navigationLinks = [...document.querySelectorAll('.main-nav a[href^="#"]')];
   const navigationSections = navigationLinks.map((link) => $(link.hash.slice(1)));
   let navigationFrame = 0;
   function updateNavigation() {
