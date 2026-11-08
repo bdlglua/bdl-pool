@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#141416">
   <meta name="description" content="BDL Pool, un pool Bitcoin solo indépendant. État du nœud, connexion Stratum et configuration de votre mineur.">
-  <title>BDL Pool — Bitcoin solo pool</title>
+  <title>BDL Pool - Solo Mining</title>
   <link rel="icon" type="image/svg+xml" sizes="any" href="./assets/brand.svg?v=miners-1">
   <link rel="preload" href="./assets/fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="./assets/style.css?v=footer-1">
@@ -43,12 +43,12 @@
   <main id="main">
     <section class="hero wrap" id="accueil" aria-labelledby="hero-title">
       <div class="hero-copy">
-        <h1 id="hero-title">Pool Bitcoin solo</h1>
-        <p class="hero-description">Connexion Stratum V1 et V2.</p>
-        <div class="hero-actions"><a href="#connexion" class="button primary">Connecter un mineur<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a><a href="#dashboard" class="text-link">Statistiques<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div>
+        <h1 id="hero-title">Pool Bitcoin solo mining</h1>
+        <p class="hero-description">Connexion Stratum V1 et Stratum V2.</p>
+        <div class="hero-actions"><a href="#connexion" class="button primary">Connecter un appareil<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a><a href="#dashboard" class="text-link">Statistiques<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div>
 
       </div>
-      <div class="hero-visual"><article class="panel node-panel"><div class="panel-heading"><span class="node-heading-icon"><img src="./assets/crypgo/icon-bitcoin.svg" width="19" height="24" alt=""></span><h3>Nœud Bitcoin</h3></div><div class="node-status"><span class="badge amber" id="node-badge">Synchronisation initiale</span><span class="quiet-label">MAINNET</span></div><p class="sync-value" id="sync-value">—<span> %</span></p><div class="progress-track" id="sync-progress" role="progressbar" aria-label="Progression estimée de la vérification" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="sync-fill"></div></div><div class="node-numbers"><span>Blocs validés<strong id="node-blocks">—</strong></span><span>En-têtes connus<strong id="node-headers">—</strong></span></div><p class="node-note" id="node-note">CKPool démarrera après la synchronisation.</p></article></div>
+      <div class="hero-visual"><article class="panel node-panel"><div class="panel-heading"><span class="node-heading-icon"><img src="./assets/crypgo/icon-bitcoin.svg" width="19" height="24" alt=""></span><h3>Nœud Bitcoin</h3></div><div class="node-status"><span class="badge amber" id="node-badge">Synchronisation</span><span class="quiet-label">MAINNET</span></div><p class="sync-value" id="sync-value">—<span> %</span></p><div class="progress-track" id="sync-progress" role="progressbar" aria-label="Progression estimée de la vérification" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="sync-fill"></div></div><div class="node-numbers"><span>Blocs validés<strong id="node-blocks">—</strong></span><span>En-têtes connus<strong id="node-headers">—</strong></span></div><p class="node-note" id="node-note">BDLPool démarrera après la synchronisation.</p></article></div>
     </section>
 
     <section class="dashboard-section wrap" id="dashboard" aria-labelledby="dashboard-title">
@@ -71,12 +71,12 @@
     <section class="miners-section wrap" id="mineurs" aria-labelledby="miners-title">
       <div class="section-heading"><h2 id="miners-title">Mineurs</h2><button type="button" id="refresh-miners" class="miners-refresh">Actualiser</button></div>
       <form id="miner-search" class="miner-search" novalidate>
-        <label for="miner-lookup-address">Statistiques par adresse Bitcoin</label>
+        <label for="miner-lookup-address">Statistiques</label>
         <div class="miner-search-row"><input id="miner-lookup-address" placeholder="bc1…, 1… ou 3…" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="miner-search-message"><button type="submit" class="button primary">Rechercher</button></div>
         <p id="miner-search-message" class="miners-message" role="status" aria-live="polite" hidden></p>
       </form>
       <div id="miner-statistics" class="miner-statistics" hidden>
-        <div class="miner-detail-heading"><div><h3>Statistiques de l’adresse</h3><code id="selected-miner-address"></code></div><span id="miner-stats-updated" class="miners-updated"></span></div>
+        <div class="miner-detail-heading"><div><h3>Statistiques de l’appareil</h3><code id="selected-miner-address"></code></div><span id="miner-stats-updated" class="miners-updated"></span></div>
         <div class="metrics-grid miner-summary">
           <article class="metric"><div class="metric-label">Hashrate · 5 min</div><p class="metric-value" id="personal-hashrate">—</p></article>
           <article class="metric"><div class="metric-label">Connexions</div><p class="metric-value" id="personal-connections">—</p></article>
@@ -101,19 +101,19 @@
           <dl class="endpoint-fields">
             <div class="endpoint-field"><dt>Adresse</dt><dd><code id="endpoint-host">bdl-pool.duckdns.org</code><button type="button" id="copy-host" class="icon-button" aria-label="Copier l’adresse du serveur"><svg class="icon"><use href="#i-copy"/></svg></button></dd></div>
             <div class="endpoint-field"><dt>Port</dt><dd><code id="endpoint-port">3333</code><button type="button" id="copy-port" class="icon-button" aria-label="Copier le port"><svg class="icon"><use href="#i-copy"/></svg></button></dd></div>
-            <div class="endpoint-field endpoint-key" id="endpoint-key-row" hidden><dt>Clé publique de chiffrement</dt><dd><code id="endpoint-key">—</code><button type="button" id="copy-key" class="icon-button" aria-label="Copier la clé publique"><svg class="icon"><use href="#i-copy"/></svg></button></dd></div>
+            <div class="endpoint-field endpoint-key" id="endpoint-key-row" hidden><dt>Clé publique</dt><dd><code id="endpoint-key">—</code><button type="button" id="copy-key" class="icon-button" aria-label="Copier la clé publique"><svg class="icon"><use href="#i-copy"/></svg></button></dd></div>
           </dl>
-          <button type="button" id="copy-url" class="endpoint-copy-url"><svg class="icon"><use href="#i-copy"/></svg><span>Copier l’URL complète</span></button>
+          <button type="button" id="copy-url" class="endpoint-copy-url"><svg class="icon"><use href="#i-copy"/></svg><span>Copier l’URL</span></button>
         </div><div class="availability-note" id="connection-availability"><span class="dot"></span><span>État du pool non confirmé.</span></div></div>
         <form class="panel setup-form" id="miner-form" novalidate><div class="panel-heading"><h3>Réglages du mineur</h3></div><label for="btc-address"><span>Adresse Bitcoin</span></label><input id="btc-address" name="address" placeholder="bc1…, 1… ou 3…" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="form-error"><label for="worker-name"><span>Nom du mineur</span><span class="optional">facultatif</span></label><input id="worker-name" name="worker" placeholder="bitaxe-01" maxlength="32" autocomplete="off" spellcheck="false"><p class="form-error" id="form-error" role="alert" hidden></p><button type="submit" class="button primary form-submit"><span>Afficher les réglages</span><svg class="icon"><use href="#i-arrow"/></svg></button><div id="miner-result" class="miner-result" hidden><div class="result-heading"><strong>À copier dans le mineur</strong><button type="button" class="icon-button" id="copy-settings" aria-label="Copier tous les réglages"><svg class="icon"><use href="#i-copy"/></svg></button></div><dl><div><dt>URL Stratum</dt><dd id="result-url"></dd></div><div><dt>Adresse</dt><dd id="result-host"></dd></div><div><dt>Port</dt><dd id="result-port"></dd></div><div id="result-key-row" hidden><dt>Clé publique de chiffrement</dt><dd id="result-key"></dd></div><div><dt>Utilisateur</dt><dd id="result-user"></dd></div><div><dt>Mot de passe</dt><dd id="result-password">x</dd></div></dl></div></form>
       </div>
     </section>
 
-    <section class="faq-section wrap" id="faq" aria-labelledby="faq-title"><div class="faq-intro"><h2 id="faq-title">FAQ</h2></div><div class="faq-list"><details><summary>Le pool est-il disponible ?<span>+</span></summary><p id="faq-availability">État du pool non confirmé.</p></details><details><summary>Puis-je me connecter depuis Internet ?<span>+</span></summary><p>Oui. Utilisez bdl-pool.duckdns.org : port 3333 pour V1 ou 3336 pour V2.</p></details><details><summary>Une share rapporte-t-elle une récompense ?<span>+</span></summary><p>Non. Il faut trouver un bloc accepté par le réseau Bitcoin. Sa récompense est disponible après 100 blocs.</p></details></div></section>
+    <section class="faq-section wrap" id="faq" aria-labelledby="faq-title"><div class="faq-intro"><h2 id="faq-title">FAQ</h2></div><div class="faq-list"><details><summary>Le pool est-il disponible ?<span>+</span></summary><p id="faq-availability">État du pool non confirmé.</p></details><details><summary>Puis-je me connecter depuis Internet ?<span>+</span></summary><p>Oui. Utilisez bdl-pool.duckdns.org : port 3333 pour Stratum V1 ou 3336 pour Stratum V2 avec la clé publique : 9c9DhUCzDsSZaCgKJitKKcngq24FLrqfJ9kUQzhxLiiSvAGuhna.</p></details><details><summary>Une share rapporte-t-elle une récompense ?<span>+</span></summary><p>Non. Il faut trouver un bloc accepté par le réseau Bitcoin. Sa récompense est disponible après 100 blocs.</p></details></div></section>
   </main>
 
   <footer class="site-footer wrap"><div class="footer-top"><a class="brand" href="#accueil" aria-label="BDL Pool, accueil"><img src="./assets/brand.svg" width="34" height="34" alt=""><span>BDL<span class="brand-light">Pool</span></span></a><p>Pool Bitcoin solo</p><a href="https://github.com/bdlglua/bdl-pool" target="_blank" rel="noopener noreferrer">GitHub <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></a></div><div class="footer-bottom"><span>© BDL Pool</span><a href="https://github.com/bdlglua" target="_blank" rel="noopener noreferrer">bdlglua</a></div></footer>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <noscript><div class="noscript-message">Activez JavaScript pour afficher le relevé et générer vos réglages. Serveur Stratum V1 : bdl-pool.duckdns.org, port 3333 ; sa disponibilité n’est pas confirmée en direct.</div></noscript>
+  <noscript><div class="noscript-message">Serveur Stratum V1 : bdl-pool.duckdns.org, port 3333, Serveur Stratum V2 : bdl-pool.duckdns.org, port 3336, clé publique : 9c9DhUCzDsSZaCgKJitKKcngq24FLrqfJ9kUQzhxLiiSvAGuhna</div></noscript>
 </body>
 </html>
