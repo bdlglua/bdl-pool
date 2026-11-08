@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
   "source": "snapshot",
-  "updatedAt": "2026-11-08T04:10:54Z",
+  "updatedAt": "2026-11-08T04:15:55Z",
   "node": {
     "chain": "main",
-    "blocks": 401016,
+    "blocks": 401459,
     "headers": 975018,
-    "verificationProgress": 0.07736488100229895,
+    "verificationProgress": 0.07777641429318899,
     "initialBlockDownload": true,
-    "updatedAt": "2026-11-08T04:10:54Z"
+    "updatedAt": "2026-11-08T04:15:55Z"
   },
   "pool": {
     "ready": false,
