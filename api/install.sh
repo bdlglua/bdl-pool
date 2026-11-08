@@ -131,7 +131,7 @@ for attempt in range(10):
 else:
     raise SystemExit('L’API locale ne répond pas. Vérifier : journalctl -u bdl-pool-api -n 20 --no-pager')
 PY
-sudo mkdir -p /etc/caddy/conf.d
+sudo install -d -m 755 /etc/caddy/conf.d
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 backup="/etc/caddy/Caddyfile.before-bdl-api-$stamp"
 fragment=/etc/caddy/conf.d/bdl-pool-api.caddy
@@ -150,7 +150,7 @@ line = 'import /etc/caddy/conf.d/*.caddy'
 if line not in text.splitlines():
     path.write_text(text.rstrip()+'\n\n'+line+'\n')
 PY
-if ! sudo caddy validate --config /etc/caddy/Caddyfile >"$state_dir/api-caddy-validation.log" 2>&1; then
+if ! sudo -u caddy caddy validate --config /etc/caddy/Caddyfile >"$state_dir/api-caddy-validation.log" 2>&1; then
   sudo cp -p -- "$backup" /etc/caddy/Caddyfile
   if "$had_fragment"; then sudo cp -p -- "${backup}.fragment" "$fragment"; else sudo rm -f -- "$fragment"; fi
   echo 'Configuration Caddy refusée ; configuration précédente restaurée.' >&2
