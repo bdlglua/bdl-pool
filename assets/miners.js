@@ -69,7 +69,7 @@
     $('online-count').textContent=usable ? format(data.total)+' '+t(data.total===1?'connexion':'connexions',data.total===1?'connection':'connections') : '—';
     $('online-updated').textContent=usable ? t('Relevé : ','Checked: ')+date(data.updatedAt) : '';
     pagination('online',usable?data.total:null,onlineOffset);
-    if (!usable) { message('online-message',data?.status==='syncing' ? t('Le pool attend la synchronisation Bitcoin.','The pool is waiting for Bitcoin to sync.') : t('Liste des connexions indisponible.','Connection list unavailable.'));return; }
+    if (!usable) { message('online-message',data?.status==='syncing' ? t('Le pool attend la synchronisation.','The pool is waiting to sync.') : t('Liste des connexions indisponible.','Connection list unavailable.'));return; }
     message('online-message',data.total===0 ? t('Aucun mineur connecté.','No miners connected.') : '');
     for (const miner of data.miners) {
       const row=document.createElement('tr');deviceCell(row,[miner.device]);
