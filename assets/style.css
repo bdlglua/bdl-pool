@@ -308,3 +308,11 @@ h3 { font-size: 18px; margin-bottom: 0; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+/* Protocol choice is independent of the local/Internet network choice. */
+.protocol-selector { display: flex; gap: 10px; margin-bottom: 12px; }
+.protocol-selector button { flex: 1; min-height: 42px; padding: 9px 12px; background: transparent; border: 1px solid #ffffff30; border-radius: 8px; color: var(--muted); font-size: 14px; }
+.protocol-selector button.selected { border-color: var(--primary); background: #99e39e12; color: var(--primary); }
+.protocol-selector button:hover { color: var(--text); }
+.protocol-note { margin: 0 0 24px; color: var(--subtle); font-size: 12px; line-height: 1.7; }
+.endpoint-value code.sv2-url { font-size: 14px; line-height: 1.8; letter-spacing: 0; }
