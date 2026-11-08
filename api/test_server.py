@@ -187,6 +187,21 @@ class APITests(unittest.TestCase):
         self.assertEqual(document['openapi'], '3.1.0')
         self.assertIn('/api/v1/miners/{address}/workers', document['paths'])
 
+    def test_api_hostname_is_separate_from_stratum_and_not_taken_from_request(self):
+        settings = dict(snapshot=str(self.snapshot), logs=str(self.root/'logs'),
+                        sv2Public=str(self.public), host='bdl-pool.com', apiHost='api.bdl-pool.com',
+                        apiPublicPort=36018, v1Port=39991, v2Port=36809)
+        self.server.api = api.PoolAPI(settings)
+        status, _, document = self.request('/api/v1/openapi.json', headers={'Host': 'untrusted.example'})
+        self.assertEqual(status, 200)
+        self.assertEqual(document['servers'], [dict(url='https://api.bdl-pool.com:36018')])
+        stratum = self.request('/api/v1/stratum')[2]
+        self.assertEqual(stratum['v1']['url'], 'stratum+tcp://bdl-pool.com:39991')
+        self.assertEqual(stratum['v2']['port'], 36809)
+        for invalid in ({'apiPublicPort': 0}, {'apiPublicPort': True}, {'apiHost': 'bad.example/path'}):
+            with self.assertRaises(ValueError):
+                api.PoolAPI(dict(settings, **invalid))
+
 
 if __name__ == '__main__':
     unittest.main()

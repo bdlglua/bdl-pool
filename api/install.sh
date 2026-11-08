@@ -58,20 +58,28 @@ settings = dict(snapshot=str(home/'.local/state/bdl-pool-monitor/repository/stat
                 ckpoolSocket='/run/ckpool/stratifier',
                 host=host, v1Port=3333, v2Port=3336)
 tls_line = ''
+api_host = host
 relay_file = Path('/etc/bdl-pool-openport/public.json')
 if relay_file.exists():
     relay = json.loads(relay_file.read_text())
-    if (relay.get('domain') != host or relay.get('managedTLS') is not True
+    domain = relay.get('domain', '')
+    if (not isinstance(domain, str) or not re.fullmatch(r'[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?', domain)
+            or host not in (domain, relay.get('previousDomain')) or relay.get('managedTLS') is not True
             or any(type(relay.get(key)) is not int or not 1 <= relay[key] <= 65535
                    for key in ('v1Port', 'v2Port', 'apiPublicPort'))):
         raise SystemExit('Configuration publique OpenPort invalide ; configuration HTTPS conservée.')
-    settings.update(v1Port=relay['v1Port'], v2Port=relay['v2Port'], apiPublicPort=relay['apiPublicPort'])
-    tls_line = '    tls /etc/caddy/bdl-pool-tls/current/fullchain.pem /etc/caddy/bdl-pool-tls/current/privkey.pem\n'
+    api_host = relay.get('apiDomain', domain)
+    directory = relay.get('tlsDirectory', '/etc/caddy/bdl-pool-tls')
+    if (not isinstance(api_host, str) or not re.fullmatch(r'[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?', api_host)
+            or directory not in ('/etc/caddy/bdl-pool-tls', '/etc/caddy/bdl-pool-domain-tls')):
+        raise SystemExit('Configuration HTTPS publique invalide ; configuration précédente conservée.')
+    settings.update(host=domain, apiHost=api_host, v1Port=relay['v1Port'], v2Port=relay['v2Port'], apiPublicPort=relay['apiPublicPort'])
+    tls_line = '    tls '+directory+'/current/fullchain.pem '+directory+'/current/privkey.pem\n'
 staged = destination.with_suffix('.tmp')
 staged.write_text(json.dumps(settings, indent=2)+'\n')
 staged.chmod(0o600)
 os.replace(staged, destination)
-caddy.write_text(host+' {\n'+tls_line+'''    handle /api/v1/* {
+caddy.write_text(api_host+' {\n'+tls_line+'''    handle /api/v1/* {
         reverse_proxy 127.0.0.1:8081 {
             transport http {
                 dial_timeout 3s
@@ -206,7 +214,7 @@ sudo systemctl reload caddy.service
 python3 - "$HOME/.config/bdl-pool-api/config.json" <<'PY'
 import json, sys
 settings = json.load(open(sys.argv[1]))
-host = settings['host']
+host = settings.get('apiHost', settings['host'])
 if settings.get('apiPublicPort', 443) != 443:
     host += ':'+str(settings['apiPublicPort'])
     print('API installée. Certificat HTTPS renouvelé par validation DNS.')

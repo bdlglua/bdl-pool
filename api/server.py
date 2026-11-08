@@ -199,11 +199,14 @@ class PoolAPI:
         self.public_key_file = Path(config['sv2Public'])
         self.online_file = Path(config.get('onlineSnapshot', '/var/lib/bdl-pool-presence/online.json'))
         self.host = config.get('host', 'bdl-pool.duckdns.org')
-        if not re.fullmatch(r'[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?', self.host):
+        self.api_host = config.get('apiHost', self.host)
+        if any(not isinstance(host, str) or not re.fullmatch(r'[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?', host)
+               for host in (self.host, self.api_host)):
             raise ValueError('Invalid public hostname')
         self.v1_port, self.v2_port = config.get('v1Port', 3333), config.get('v2Port', 3336)
-        if any(type(p) is not int or not 1 <= p <= 65535 for p in (self.v1_port, self.v2_port)):
-            raise ValueError('Invalid Stratum port')
+        self.api_port = config.get('apiPublicPort', 443)
+        if any(type(p) is not int or not 1 <= p <= 65535 for p in (self.v1_port, self.v2_port, self.api_port)):
+            raise ValueError('Invalid public port')
 
     def pool(self):
         try:
@@ -381,7 +384,10 @@ class PoolAPI:
         if route == 'stratum':
             return self.stratum()
         if route == 'openapi.json':
-            return json.loads(Path(__file__).with_name('openapi.json').read_text())
+            specification = json.loads(Path(__file__).with_name('openapi.json').read_text())
+            origin = 'https://'+self.api_host+((':'+str(self.api_port)) if self.api_port != 443 else '')
+            specification['servers'] = [dict(url=origin)]
+            return specification
         parts = route.split('/')
         if len(parts) in (2, 3, 4) and parts[0] == 'miners' and (len(parts) == 2 or parts[2] == 'workers'):
             miner, workers = self.miner(parts[1])
