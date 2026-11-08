@@ -138,7 +138,7 @@
       requestController.abort();
       selectedFailed=true;
       if (selectedData) { selected.offset=selectedData.workers.offset;renderSelected();message('miner-search-message',t('Actualisation indisponible. Les dernières mesures sont conservées.','Update unavailable. Previous readings are retained.')); }
-      else message('miner-search-message',error.status===404 ? t('Aucune statistique pour cette adresse. CKPool enregistre les données après une première share.','No statistics for this address. CKPool records data after the first share.') : t('Statistiques indisponibles. Réessayez.','Statistics unavailable. Try again.'),true);
+      else message('miner-search-message',error.status===404 ? t('Aucune statistique pour cette adresse. BDLPool enregistre les données après une première share.','No statistics for this address. BDLPool records data after the first share.') : t('Statistiques indisponibles. Réessayez.','Statistics unavailable. Try again.'),true);
     } finally {
       clearTimeout(timeout);
       if(current===generation){selectedBusy=false;$('miner-statistics').setAttribute('aria-busy','false');}
