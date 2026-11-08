@@ -130,7 +130,7 @@
     $("copy-url").disabled = !currentUrl();
     $("miner-form").querySelector("button[type=submit]").disabled = !host || inactive;
     $("protocol-note").hidden = !inactive && !v2;
-    $("protocol-note").textContent = inactive ? t("Stratum V2 non activé.");
+    $("protocol-note").textContent = inactive ? t("Stratum V2 non activé.") : t("Champs séparés ou URL complète, selon votre mineur.");
     let availability = t("État du pool non confirmé.");
     if (nodeCurrent && !statusFailed && !statusStale) {
       if (statusData?.node?.initialBlockDownload) availability = t("Bitcoin en synchronisation.");
