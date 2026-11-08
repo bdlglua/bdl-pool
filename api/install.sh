@@ -5,7 +5,7 @@ umask 077
 [[ "$(id -un)" == bdl && "$HOME" == /home/bdl ]] || { echo 'Lancer avec le compte bdl, sans sudo.' >&2; exit 1; }
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 [[ "$script_dir" == /home/bdl/bdl-pool-site/api ]] || { echo 'Le dépôt doit être dans /home/bdl/bdl-pool-site.' >&2; exit 1; }
-for tool in python3 sudo systemctl flock; do
+for tool in python3 sudo systemctl flock ss; do
   command -v "$tool" >/dev/null || { echo "Outil absent : $tool" >&2; exit 1; }
 done
 state_dir="$HOME/.local/state/bdl-pool-monitor"
@@ -20,15 +20,15 @@ for service in nginx apache2; do
 done
 # Refuse occupied ports belonging to another service; never stop them.
 python3 - <<'PY'
-import socket, subprocess
+import subprocess
 for port, unit in ((8081, 'bdl-pool-api.service'), (80, 'caddy.service'), (443, 'caddy.service')):
     if subprocess.run(['systemctl', 'is-active', '--quiet', unit]).returncode == 0:
         continue
-    with socket.socket() as probe:
-        try:
-            probe.bind(('0.0.0.0', port))
-        except OSError:
-            raise SystemExit(f'Le port {port} est occupé par un autre service. Installation interrompue.')
+    probe = subprocess.run(['ss', '-H', '-ltn', f'sport = :{port}'], capture_output=True, text=True)
+    if probe.returncode:
+        raise SystemExit(f'Impossible de vérifier le port {port} avec ss. Installation interrompue.')
+    if probe.stdout.strip():
+        raise SystemExit(f'Le port {port} est occupé par un autre service. Installation interrompue.')
 PY
 temporary="$(mktemp -d)"
 trap 'rm -rf -- "$temporary"' EXIT
