@@ -177,14 +177,6 @@ h3 { font-size: 18px; margin-bottom: 0; }
 .miner-result dd { margin: 0; overflow-wrap: anywhere; }
 .miner-result > p { margin-bottom: 0; color: var(--subtle); font-size: 12px; }
 
-.solo-section { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 80px; padding-top: 100px; padding-bottom: 40px; }
-.solo-intro > p:not(.section-label) { margin: 24px 0; color: var(--muted); font-size: 16px; line-height: 1.8; }
-.principles article { border-bottom: 1px solid var(--line); padding: 22px 0; }
-.principles article:first-child { padding-top: 0; }
-.principles article:last-child { border-bottom: 0; }
-.principles h3 { font-size: 18px; }
-.principles p { color: var(--subtle); font-size: 14px; margin: 10px 0 0; line-height: 1.8; }
-
 /* Accordion adapted from Crypgo / Home / Faq. */
 .faq-section { padding-top: 80px; min-height: calc(100svh - var(--anchor-offset)); }
 .faq-intro { text-align: center; margin-bottom: 36px; }
@@ -210,7 +202,6 @@ h3 { font-size: 18px; margin-bottom: 0; }
   .main-nav { gap: 22px; }
   .header-inner { gap: 20px; }
   .header-actions { gap: 16px; }
-  .solo-section { gap: 48px; }
 }
 @media (max-width: 1000px) {
   :root { --anchor-offset: 96px; }
@@ -253,10 +244,8 @@ h3 { font-size: 18px; margin-bottom: 0; }
   .dashboard-section .section-heading { flex-direction: column; gap: 16px; }
   .heading-actions { flex-wrap: nowrap; justify-content: flex-start; padding-top: 0; }
   .section-aside { display: none; }
-  .connection-grid, .solo-section { grid-template-columns: 1fr; }
-  .connection-section, .solo-section { padding-top: 72px; }
-  .solo-section { gap: 38px; }
-  .solo-intro > p:not(.section-label) { max-width: 620px; }
+  .connection-grid { grid-template-columns: 1fr; }
+  .connection-section { padding-top: 72px; }
   .faq-section { padding-top: 56px; }
   .faq-list details { padding-inline: 20px; }
   .footer-top { flex-wrap: wrap; gap: 22px; }
