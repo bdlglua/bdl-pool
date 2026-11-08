@@ -7,6 +7,7 @@
   Object.assign(translations, {"En attente d’un relevé": "Waiting for a reading", "Actualisation en attente": "Update pending", "Dernière lecture réussie : ": "Last successful reading: ", " · actualisation en attente": " · update pending", "Valeurs conservées ; l’état actuel reste à confirmer.": "Saved readings; current status remains unconfirmed.", "Relevé ancien. ": "Old reading. ", "Aucun relevé du nœud n’est encore disponible.": "No node reading is available yet.", "La lecture du nœud est temporairement indisponible. La disponibilité du pool reste à confirmer.": "The node reading is temporarily unavailable. Pool availability remains unconfirmed."});
   Object.assign(translations, {"Vérifiez le protocole pris en charge par le firmware de votre mineur.": "Check which protocol your miner’s firmware supports.", "Stratum V2 n’est pas encore activé. Utilisez Stratum V1 pour le moment.": "Stratum V2 is not enabled yet. Use Stratum V1 for now.", "Stratum V2 : utilisez l’URL complète, clé publique incluse, avec un mineur compatible.": "Stratum V2: use the complete URL, including the public key, with a compatible miner.", "Le nœud est synchronisé. Vérifiez la réception de travail Stratum V2 dans votre mineur.": "The node is synced. Check that your miner receives Stratum V2 jobs.", "SERVEUR STRATUM V1": "STRATUM V1 SERVER", "Non activé": "Not enabled", "Copier l’URL Stratum": "Copy the Stratum URL", "Non utilisé": "Unused", "Protocole : ": "Protocol: ", "URL Stratum : ": "Stratum URL: ", "Port : ": "Port: ", "Mot de passe : ": "Password: "});
   Object.assign(translations, {"Renseignez les champs séparés de votre mineur ou copiez l’URL complète.": "Fill in your miner’s separate fields or copy the full URL.", "Adresse : ": "Address: ", "Clé publique de chiffrement : ": "Public encryption key: "});
+  Object.assign(translations, {"Stratum V2 non activé.": "Stratum V2 is not enabled.", "Champs séparés ou URL complète, selon votre mineur.": "Use separate fields or the full URL, depending on your miner.", "État du pool non confirmé.": "Pool status unconfirmed.", "Bitcoin en synchronisation.": "Bitcoin is syncing.", "Connexion Stratum V2 à vérifier sur le mineur.": "Check the Stratum V2 connection on your miner.", "Travail Stratum V1 reçu au dernier contrôle.": "Stratum V1 jobs received at the last check.", "Connexion Stratum V1 à vérifier.": "Stratum V1 connection unconfirmed.", "Suivi indisponible.": "Monitoring unavailable.", "Relevé du nœud indisponible.": "Node reading unavailable.", "Relevé manuel. État actuel non confirmé.": "Manual reading. Current status unconfirmed.", "Synchronisation terminée.": "Sync complete.", "CKPool démarrera après la synchronisation.": "CKPool will start after syncing.", "État actuel non confirmé par le suivi.": "Current status is not confirmed by monitoring.", "Du travail Stratum V1 a été reçu au dernier contrôle.": "Stratum V1 jobs were received at the last check.", "Le nœud est synchronisé. La connexion Stratum reste à vérifier.": "The node is synced. The Stratum connection still needs checking.", "Bitcoin est en synchronisation. CKPool démarrera ensuite.": "Bitcoin is syncing. CKPool will start afterwards.", "Stratum V1 répond. Aucun travail reçu au dernier contrôle.": "Stratum V1 responds. No jobs received at the last check."});
   const t = (text) => english ? (translations[text] || text) : text;
   const locale = english ? "en-GB" : "fr-FR";
   const config = window.BDL_POOL_CONFIG || {};
@@ -128,17 +129,15 @@
     $("copy-key").disabled = !v2 || inactive;
     $("copy-url").disabled = !currentUrl();
     $("miner-form").querySelector("button[type=submit]").disabled = !host || inactive;
-    $("protocol-note").textContent = inactive ? t("Stratum V2 n’est pas encore activé. Utilisez Stratum V1 pour le moment.") : v2 ? t("Renseignez les champs séparés de votre mineur ou copiez l’URL complète.") : t("Vérifiez le protocole pris en charge par le firmware de votre mineur.");
-    $("endpoint-note").textContent = host
-      ? t("Adresse publique du pool. Consultez son état avant de connecter un mineur.")
-      : t("L’adresse publique du pool n’est pas encore configurée.");
-    let availability = currentlyReady()
-      ? t("Pool disponible au dernier contrôle. Vérifiez les shares acceptées après connexion.")
-      : t("Disponibilité non confirmée en direct. Gardez votre pool actuel pendant la préparation.");
-    if (inactive) availability = t("Stratum V2 n’est pas encore activé. Utilisez Stratum V1 pour le moment.");
-    else if (v2) availability = nodeCurrent && statusData?.node?.initialBlockDownload === false
-      ? t("Le nœud est synchronisé. Vérifiez la réception de travail Stratum V2 dans votre mineur.")
-      : t("Disponibilité non confirmée en direct. Gardez votre pool actuel pendant la préparation.");
+    $("protocol-note").hidden = !inactive && !v2;
+    $("protocol-note").textContent = inactive ? t("Stratum V2 non activé.") : t("Champs séparés ou URL complète, selon votre mineur.");
+    let availability = t("État du pool non confirmé.");
+    if (nodeCurrent && !statusFailed && !statusStale) {
+      if (statusData?.node?.initialBlockDownload) availability = t("Bitcoin en synchronisation.");
+      else if (v2) availability = t("Connexion Stratum V2 à vérifier sur le mineur.");
+      else availability = currentlyReady() ? t("Travail Stratum V1 reçu au dernier contrôle.") : t("Connexion Stratum V1 à vérifier.");
+    }
+    $("connection-availability").hidden = inactive;
     $("connection-availability").lastElementChild.textContent = availability;
     document.querySelectorAll("[data-protocol]").forEach((button) => {
       const selected = button.dataset.protocol === protocol;
@@ -212,10 +211,10 @@
     nodeCurrent = !manual && !nodeUnknown && !retained;
     if (unreliable) {
       badge("pool-badge", t("Suivi indisponible"), "neutral");
-      $("data-notice").textContent = t("Le suivi est indisponible ou trop ancien. Les dernières données conservées ne confirment pas la disponibilité du pool.") + t(" · dernier relevé : ") + timestampLabel(data.updatedAt);
+      $("data-notice").textContent = t("Suivi indisponible.") + t(" · dernier relevé : ") + timestampLabel(data.updatedAt);
     } else if (manual) {
       badge("pool-badge", t("Relevé manuel"), "amber");
-      $("data-notice").textContent = t("Dernier relevé manuel : ") + dateLabel(data.updatedAt) + t(". Ces informations ne sont pas actualisées en direct ; les mesures inconnues restent vides.");
+      $("data-notice").textContent = t("Dernier relevé manuel : ") + dateLabel(data.updatedAt);
     } else if (retained || nodeUnknown) {
       badge("pool-badge", t("Actualisation en attente"), "amber");
       $("data-notice").textContent = nodeUnknown
@@ -241,16 +240,16 @@
     const nodeSynced = node.initialBlockDownload === false;
     badge("node-badge", nodeUnknown ? t("En attente d’un relevé") : retained ? t("Dernier état connu") : nodeSynced ? (manual ? t("Synchronisé · relevé") : t("Synchronisé")) : t("Synchronisation initiale"), retained || nodeUnknown ? "neutral" : nodeSynced ? "green" : "amber");
     if (nodeUnknown) {
-      $("node-note").textContent = t("Aucun relevé du nœud n’est encore disponible.");
+      $("node-note").textContent = t("Relevé du nœud indisponible.");
     } else if (retained) {
-      $("node-note").textContent = (nodeOld ? t("Relevé ancien. ") : "") + t("Dernière lecture réussie : ") + timestampLabel(selected.updatedAt) + ". " + t("Valeurs conservées ; l’état actuel reste à confirmer.");
+      $("node-note").textContent = (nodeOld ? t("Relevé ancien. ") : "") + t("Dernière lecture réussie : ") + timestampLabel(selected.updatedAt) + ".";
     } else {
-      $("node-note").textContent = manual ? t("État du dernier relevé. Le serveur prévoit un démarrage du pool après synchronisation.") : nodeSynced ? t("Vérification initiale terminée. La disponibilité Stratum dépend aussi de CKPool.") : t("Le pool attend la fin de la synchronisation complète du nœud.");
+      $("node-note").textContent = manual ? t("Relevé manuel. État actuel non confirmé.") : nodeSynced ? t("Synchronisation terminée.") : t("CKPool démarrera après la synchronisation.");
     }
     $("activity-state").textContent = unreliable ? t("Dernières données conservées") : finite(pool.hashrateHps) ? (manual ? t("Dernière mesure manuelle") : t("Mesures reçues")) : t("Aucune mesure reçue");
-    $("faq-availability").textContent = unreliable ? t("Le suivi est actuellement indisponible ou trop ancien. Vérifiez le serveur avant de connecter un mineur.") : manual ? t("Le dernier relevé manuel indique un pool en préparation. Ce site ne confirme pas sa disponibilité actuelle tant que le suivi en direct n’est pas connecté.") : retained || nodeUnknown ? t("La lecture du nœud est temporairement indisponible. La disponibilité du pool reste à confirmer.") : currentlyReady() ? t("Le relevé automatique indique un nœud synchronisé et un travail Stratum reçu lors du dernier contrôle. Vérifiez les shares acceptées sur votre mineur.") : t("Le suivi indique un pool en préparation. Gardez votre mineur sur son pool actuel tant que le serveur n’est pas prêt.");
+    $("faq-availability").textContent = unreliable || manual || retained || nodeUnknown ? t("État actuel non confirmé par le suivi.") : currentlyReady() ? t("Du travail Stratum V1 a été reçu au dernier contrôle.") : nodeSynced ? t("Le nœud est synchronisé. La connexion Stratum reste à vérifier.") : t("Bitcoin est en synchronisation. CKPool démarrera ensuite.");
     if (nodeCurrent && data.checks?.stratum === "subscribed_no_job") {
-      $("faq-availability").textContent = t("Stratum répond, mais aucun travail n’a été confirmé par le contrôle automatique. Vérifiez les jobs et les shares dans votre mineur.");
+      $("faq-availability").textContent = t("Stratum V1 répond. Aucun travail reçu au dernier contrôle.");
     }
     renderChart(data.history);
     renderEndpoint();
