@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <meta name="theme-color" content="#030b15">
+  <meta name="theme-color" content="#141416">
   <meta name="description" content="BDL Pool, un pool Bitcoin solo indépendant. État du nœud, connexion Stratum et configuration de votre mineur.">
   <title>BDL Pool — Bitcoin solo pool</title>
-  <link rel="icon" type="image/svg+xml" sizes="any" href="./assets/crypgo/mark.svg?v=site-logo-1">
+  <link rel="icon" type="image/svg+xml" sizes="any" href="./assets/brand.svg?v=bdl-brand-1">
   <link rel="preload" href="./assets/fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="./assets/style.css?v=content-trim-1">
-  <script src="./config.js?v=content-trim-1" defer></script>
-  <script src="./assets/app.js?v=content-trim-1" defer></script>
+  <link rel="stylesheet" href="./assets/style.css?v=bdl-brand-1">
+  <script src="./config.js?v=bdl-brand-1" defer></script>
+  <script src="./assets/app.js?v=bdl-brand-1" defer></script>
 </head>
 <body>
   <svg class="icon-sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
@@ -32,7 +32,7 @@
   <a class="skip-link" href="#main">Aller au contenu</a>
   <header class="site-header">
     <div class="header-inner wrap">
-      <a class="brand" href="#accueil" aria-label="BDL Pool, accueil"><img src="./assets/crypgo/mark.svg" width="34" height="34" alt=""><span>BDL<span class="brand-light">Pool</span></span></a>
+      <a class="brand" href="#accueil" aria-label="BDL Pool, accueil"><img src="./assets/brand.svg" width="34" height="34" alt=""><span>BDL<span class="brand-light">Pool</span></span></a>
       <nav id="main-nav" class="main-nav" aria-label="Navigation principale"><a href="#dashboard" class="active">Le pool</a><a href="#connexion">Connexion</a><a href="#faq">FAQ</a></nav>
       <div class="header-actions"><a class="language-switch" href="./en/" lang="en" hreflang="en" aria-label="Switch to English">EN</a><a class="header-github" href="https://github.com/bdlglua/bdl-pool" target="_blank" rel="noopener noreferrer">GitHub <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></a><button class="menu-toggle" type="button" aria-label="Ouvrir le menu" aria-controls="main-nav" aria-expanded="false"><span></span><span></span><span></span></button></div>
     </div>
@@ -44,7 +44,7 @@
         <p class="hero-label">Bitcoin · Minage solo</p>
         <h1 id="hero-title">Miner du Bitcoin<br><span>en solo.</span></h1>
         <p class="hero-description">Connectez votre mineur avec votre adresse BTC. Retrouvez ici l’état du nœud et les statistiques du pool.</p>
-        <div class="hero-actions"><a href="#connexion" class="button primary">Configurer mon mineur<img src="./assets/crypgo/icon-arrow.svg" width="20" height="20" alt=""></a><a href="#dashboard" class="text-link">Voir les statistiques<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div>
+        <div class="hero-actions"><a href="#connexion" class="button primary">Configurer mon mineur<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a><a href="#dashboard" class="text-link">Voir les statistiques<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div>
 
       </div>
       <div class="hero-visual"><article class="panel node-panel"><div class="panel-heading"><span class="node-heading-icon"><img src="./assets/crypgo/icon-bitcoin.svg" width="19" height="24" alt=""></span><h3>Le nœud Bitcoin</h3></div><div class="node-status"><span class="badge amber" id="node-badge">Synchronisation initiale</span><span class="quiet-label">MAINNET</span></div><p class="sync-value" id="sync-value">—<span> %</span></p><div class="progress-track" id="sync-progress" role="progressbar" aria-label="Progression estimée de la vérification" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="sync-fill"></div></div><div class="node-numbers"><span>Blocs validés<strong id="node-blocks">—</strong></span><span>En-têtes connus<strong id="node-headers">—</strong></span></div><p class="node-note" id="node-note">Le pool démarrera après la synchronisation complète du nœud.</p></article><div class="hero-caption">Dernier état relevé du nœud Bitcoin</div></div>
@@ -85,7 +85,7 @@
     <section class="faq-section wrap" id="faq" aria-labelledby="faq-title"><div class="faq-intro"><p class="section-label">Questions fréquentes</p><h2 id="faq-title">À propos du pool</h2><p class="faq-aside">Connexion, disponibilité et récompenses.</p></div><div class="faq-list"><details><summary>Le pool est-il déjà disponible ?<span>+</span></summary><p id="faq-availability">Le dernier relevé manuel indique une synchronisation initiale en cours. L’accès Stratum est prévu après cette étape. Tant qu’un suivi en direct n’est pas connecté, ce site ne confirme pas la disponibilité actuelle du serveur.</p></details><details><summary>Puis-je me connecter depuis Internet ?<span>+</span></summary><p>Utilisez bdl-pool.duckdns.org avec le port du protocole choisi. Vérifiez l’état du pool avant de connecter votre mineur.</p></details><details><summary>Est-ce que GitHub héberge le mineur ?<span>+</span></summary><p>GitHub Pages héberge l’interface web. Le nœud Bitcoin et CKPool fonctionnent sur un serveur distinct. Un site disponible ne signifie donc pas automatiquement que le serveur de minage est disponible.</p></details><details><summary>Est-ce que je gagne à chaque share ?<span>+</span></summary><p>Non. Les shares servent à vérifier et mesurer le travail. En mode solo, une récompense dépend de la découverte d’un bloc valide et de son acceptation par le réseau. Les récompenses de bloc sont soumises à la maturité Bitcoin de 100 blocs.</p></details><details><summary>Faut-il fournir une clé privée ou une phrase de récupération ?<span>+</span></summary><p>Jamais. Utilisez uniquement une adresse de réception du réseau Bitcoin BTC. Le configurateur traite cette adresse dans votre navigateur, sans l’enregistrer ni la transmettre à un service.</p></details></div></section>
   </main>
 
-  <footer class="site-footer wrap"><div class="footer-top"><a class="brand" href="#accueil" aria-label="BDL Pool, accueil"><img src="./assets/crypgo/mark.svg" width="34" height="34" alt=""><span>BDL<span class="brand-light">Pool</span></span></a><p>Bitcoin · SHA-256d · Stratum</p><a href="https://github.com/bdlglua/bdl-pool" target="_blank" rel="noopener noreferrer">GitHub <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></a></div><div class="footer-bottom"><span>© BDL Pool</span><a href="https://github.com/bdlglua" target="_blank" rel="noopener noreferrer">bdlglua</a></div></footer>
+  <footer class="site-footer wrap"><div class="footer-top"><a class="brand" href="#accueil" aria-label="BDL Pool, accueil"><img src="./assets/brand.svg" width="34" height="34" alt=""><span>BDL<span class="brand-light">Pool</span></span></a><p>Bitcoin · SHA-256d · Stratum</p><a href="https://github.com/bdlglua/bdl-pool" target="_blank" rel="noopener noreferrer">GitHub <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></a></div><div class="footer-bottom"><span>© BDL Pool</span><a href="https://github.com/bdlglua" target="_blank" rel="noopener noreferrer">bdlglua</a></div></footer>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
   <noscript><div class="noscript-message">Activez JavaScript pour afficher le relevé et générer vos réglages. Serveur Stratum V1 : bdl-pool.duckdns.org, port 3333 ; sa disponibilité n’est pas confirmée en direct.</div></noscript>
 </body>

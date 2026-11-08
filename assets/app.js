@@ -175,12 +175,12 @@
     const xy = points.map((p) => [48 + (Date.parse(p.time) - start) / (end - start || 1) * 582, 142 - p.hashrateHps / peak * 123]);
     for (const [ratio, label] of [[0, hashrate(peak)], [0.5, hashrate(peak / 2)], [1, "0"]]) {
       const y = 19 + ratio * 123;
-      svg.appendChild(svgElement("line", { x1: 48, y1: y, x2: 630, y2: y, stroke: "#ffffff0c" }));
+      svg.appendChild(svgElement("line", { x1: 48, y1: y, x2: 630, y2: y, stroke: "var(--chart-grid)" }));
       const text = svgElement("text", { x: 0, y: y + 3, class: "chart-label" });
       text.textContent = label;
       svg.appendChild(text);
     }
-    svg.appendChild(svgElement("polyline", { points: xy.map((p) => p.join(",")).join(" "), fill: "none", stroke: "#99e39e", "stroke-width": 2, "stroke-linejoin": "round" }));
+    svg.appendChild(svgElement("polyline", { points: xy.map((p) => p.join(",")).join(" "), fill: "none", stroke: "var(--primary)", "stroke-width": 2, "stroke-linejoin": "round" }));
     const formatTime = (value) => new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" }).format(new Date(value));
     for (const [x, anchor, time] of [[48, "start", points[0].time], [630, "end", points.at(-1).time]]) {
       const text = svgElement("text", { x, y: 165, "text-anchor": anchor, class: "chart-label" });
