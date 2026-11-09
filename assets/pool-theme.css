@@ -151,7 +151,7 @@ h3 { font-weight: 650; }
 .panel-foot { border-color: var(--line); }
 .chart-label { fill: var(--muted); }
 
-.miners-section { margin: 0; }
+.miners-section { margin: 0 auto; }
 .miner-search { padding: 22px; }
 .miner-search-row input, .setup-form input {
   border-color: var(--line);
