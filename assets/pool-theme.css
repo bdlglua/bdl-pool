@@ -34,7 +34,12 @@
 
 html { scroll-padding-top: var(--anchor-offset); }
 body { background: var(--bg); color: var(--text); }
-.wrap { width: 100%; max-width: 1160px; padding-inline: 24px; }
+.wrap {
+  width: calc(100% - 48px);
+  max-width: 1160px;
+  margin-inline: auto;
+  padding-inline: 0;
+}
 :focus-visible { outline-color: var(--primary); outline-offset: 2px; }
 
 .site-header {
