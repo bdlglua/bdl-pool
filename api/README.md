@@ -36,6 +36,9 @@ sont pas modifiés. Le port 8081 reste local.
 
 Base : `https://api.bdl-pool.com:36018/api/v1`
 
+Clients exécutables en TypeScript, Rust et Go : [exemples API](examples/README.md).
+Outils de monitoring, bot Discord et exporteur Prometheus : [outils API](tools/README.md).
+
 | GET | Réponse |
 | --- | --- |
 | `/health` | État du processus API, indépendant de Bitcoin/CKPool |

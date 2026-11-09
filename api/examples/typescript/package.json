@@ -1,0 +1,13 @@
+{
+  "name": "bdl-pool-api-typescript-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node health.ts",
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "bdl-pool-discord-bot",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "deploy-commands": "npm run build && node dist/deploy-commands.js",
+    "start": "node dist/bot.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "typescript": "^5.9.3"
+  }
+}
