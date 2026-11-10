@@ -308,7 +308,10 @@
     event.preventDefault();
     clearResult();
     const host = currentHost();
-    const address = $("btc-address").value.trim();
+    const enteredAddress = $("btc-address").value.trim();
+    // Bech32 also permits a fully uppercase spelling, but never mixed case.
+    const address = enteredAddress.startsWith("BC1") && enteredAddress === enteredAddress.toUpperCase()
+      ? enteredAddress.toLowerCase() : enteredAddress;
     const worker = $("worker-name").value.trim();
     // Contrôle du format uniquement ; ce formulaire ne valide pas la somme de contrôle.
     const addressFormat = /^(?:[13][1-9A-HJ-NP-Za-km-z]{25,34}|bc1[ac-hj-np-z02-9]{11,87})$/;

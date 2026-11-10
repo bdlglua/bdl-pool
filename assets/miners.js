@@ -146,7 +146,8 @@
   }
   $('miner-search').addEventListener('submit',event=>{
     event.preventDefault();controller?.abort();generation++;selectedBusy=false;selectedData=null;$('miner-statistics').hidden=true;
-    const address=$('miner-lookup-address').value.trim();
+    const enteredAddress=$('miner-lookup-address').value.trim();
+    const address=enteredAddress.startsWith('BC1') && enteredAddress===enteredAddress.toUpperCase() ? enteredAddress.toLowerCase() : enteredAddress;
     if (!addressPattern.test(address)) { selected=null;$('miner-lookup-address').setAttribute('aria-invalid','true');message('miner-search-message',t('Vérifiez votre adresse Bitcoin.','Check your Bitcoin address.'),true);return; }
     $('miner-lookup-address').removeAttribute('aria-invalid');selected={address,offset:0};message('miner-search-message',t('Chargement…','Loading…'));loadSelected(true);
   });

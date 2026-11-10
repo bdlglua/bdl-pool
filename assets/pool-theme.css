@@ -10,6 +10,7 @@
   --line: #d9ddda;
   --primary: #287a72;
   --primary-hover: #20665f;
+  --on-primary: #fff;
   --chart-grid: #d4dad7;
   --amber: #946215;
   --font: "DM Sans", Arial, sans-serif;
@@ -28,6 +29,7 @@
   --line: #343d3b;
   --primary: #70bdb2;
   --primary-hover: #88cec3;
+  --on-primary: #151a1a;
   --chart-grid: #394541;
   --amber: #d3aa5e;
 }
@@ -98,7 +100,7 @@ h3 { font-weight: 650; }
   color: var(--text);
   font-weight: 600;
 }
-.button.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+.button.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
 .button.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
 .text-link { color: var(--text); font-weight: 600; }
 
@@ -126,7 +128,6 @@ h3 { font-weight: 650; }
 .dashboard-section, .miners-section, .connection-section, .faq-section {
   padding-block: 58px;
   border-top: 1px solid var(--line);
-  scroll-margin-top: var(--anchor-offset);
 }
 .dashboard-section > .metrics-grid {
   gap: 0;
@@ -145,10 +146,10 @@ h3 { font-weight: 650; }
 .dashboard-section > .metrics-grid .metric:last-child { border-right: 0; }
 .dashboard-section > .metrics-grid .metric:first-child {
   background: var(--primary);
-  color: #fff;
+  color: var(--on-primary);
 }
 .dashboard-section > .metrics-grid .metric:first-child .metric-label,
-.dashboard-section > .metrics-grid .metric:first-child .metric-value { color: #fff; }
+.dashboard-section > .metrics-grid .metric:first-child .metric-value { color: var(--on-primary); }
 .metric-label { color: var(--muted); font-size: 12px; font-weight: 600; }
 .metric-value { margin-top: 8px; font-size: 25px; font-weight: 650; }
 .data-notice { color: var(--muted); }
@@ -206,7 +207,7 @@ h3 { font-weight: 650; }
 .endpoint-copy-url { color: var(--text); }
 .protocol-selector { gap: 6px; }
 .protocol-selector button { min-height: 38px; background: var(--panel); }
-.protocol-selector button.selected { background: var(--primary); border-color: var(--primary); color: #fff; }
+.protocol-selector button.selected { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
 .protocol-note { color: var(--muted); }
 .faq-section { padding-top: 58px; }
 .faq-list details {
@@ -278,4 +279,7 @@ h3 { font-weight: 650; }
   .dashboard-section > .metrics-grid .metric { min-height: 92px; padding: 12px; }
   .dashboard-section > .metrics-grid .metric-value { font-size: 21px; }
   .dashboard-section > .metrics-grid .metric-label { font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
 }
