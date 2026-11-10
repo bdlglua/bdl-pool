@@ -4,18 +4,20 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#eeefec">
+  <meta name="theme-color" content="#070913">
   <meta name="description" content="BDL Pool, a solo Bitcoin pool. Node status, Stratum connection and miner settings.">
   <title>BDL Pool</title>
   <link rel="canonical" href="https://bdl-pool.com/en/">
   <link rel="icon" type="image/svg+xml" sizes="any" href="../assets/brand.svg?v=miners-1">
-  <link rel="preload" href="../assets/fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <script src="../assets/theme.js?v=pool-theme-1"></script>
+  <script src="../assets/theme.js?v=pulse-1"></script>
   <link rel="stylesheet" href="../assets/style.css?v=openport-1">
   <link rel="stylesheet" href="../assets/miners.css?v=miners-1">
   <link rel="stylesheet" href="../assets/pool-theme.css?v=audit-3">
+  <link rel="stylesheet" href="../assets/pulse-theme.css?v=pulse-1">
+  <script src="../assets/vendor/chart.umd.min.js?v=4.5.1" defer></script>
+  <script src="../assets/pulse-chart.js?v=pulse-1" defer></script>
   <script src="../config.js?v=website-1" defer></script>
-  <script src="../assets/app.js?v=audit-3" defer></script>
+  <script src="../assets/app.js?v=pulse-1" defer></script>
   <script src="../assets/miners.js?v=audit-3" defer></script>
 </head>
 <body>
@@ -46,7 +48,7 @@
   <main id="main">
     <section class="hero wrap" id="accueil" aria-labelledby="hero-title">
       <div class="hero-copy">
-        <h1 id="hero-title">Solo Miner</h1>
+        <h1 id="hero-title">BDL <span class="hero-accent">Pool</span></h1>
         <p class="hero-description">Stratum V1 and Stratum V2 connections.</p>
         <div class="hero-actions"><a href="#connexion" class="button primary">Connect a miner<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a><a href="#dashboard" class="text-link">Statistics<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div>
 
@@ -66,7 +68,7 @@
       </div>
 
       <div class="overview-grid">
-        <article class="panel activity-panel"><div class="panel-heading"><h3>Hashrate</h3></div><div class="chart-area" id="chart-area"><div class="empty-chart" id="chart-empty"><strong>No measurements</strong></div><svg id="hash-chart" viewBox="0 0 640 170" role="img" aria-label="Measured hashrate over time" hidden></svg></div><div class="panel-foot"><span><span class="dot muted-dot"></span> <span id="activity-state">No measurements received</span></span><span id="sample-count">No data available</span></div></article>
+        <article class="panel activity-panel"><div class="panel-heading"><h3>Hashrate</h3></div><div class="chart-area" id="chart-area"><div class="empty-chart" id="chart-empty"><strong>No measurements</strong></div><div class="pulse-chart-frame" id="pool-chart-frame" hidden><canvas id="cryptoChart" role="img" aria-label="Pool hashrate history" aria-describedby="sample-count" hidden></canvas><svg id="hash-chart" viewBox="0 0 640 170" role="img" aria-label="Measured hashrate over time" hidden></svg></div></div><div class="panel-foot"><span><span class="dot muted-dot"></span> <span id="activity-state">No measurements received</span></span><span id="sample-count">No data available</span></div></article>
 
       </div>
     </section>

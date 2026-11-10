@@ -80,3 +80,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## CryptoPulse template and Chart.js
+
+The current presentation adapts the CryptoPulse template supplied by the site owner. Chart.js 4.5.1 is served locally under the MIT License; see `assets/vendor/README.md` and `assets/vendor/CHARTJS-LICENSE.md`.

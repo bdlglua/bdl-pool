@@ -38,7 +38,7 @@
     button.setAttribute("aria-label", label);
     button.setAttribute("title", label);
     button.setAttribute("aria-pressed", String(dark));
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#151a1a" : "#eeefec");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#070913" : "#f6f7fc");
   }
 
   function addButton() {
@@ -55,9 +55,9 @@
   }
 
   try {
-    root.dataset.theme = localStorage.getItem(storageKey) === "dark" ? "dark" : "light";
+    root.dataset.theme = localStorage.getItem(storageKey) === "light" ? "light" : "dark";
   } catch {
-    root.dataset.theme = "light";
+    root.dataset.theme = "dark";
   }
 
   document.addEventListener("DOMContentLoaded", addButton, { once: true });
@@ -66,5 +66,6 @@
     root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark";
     try { localStorage.setItem(storageKey, root.dataset.theme); } catch { /* Theme still applies for this page view. */ }
     updateButton();
+    document.dispatchEvent(new Event("bdl-theme-change"));
   });
 })();

@@ -159,14 +159,20 @@
   }
   function renderChart(history) {
     const svg = $("hash-chart");
+    const canvas = $("cryptoChart");
+    const frame = $("pool-chart-frame");
+    if (frame) frame.hidden = true;
+    if (canvas) canvas.hidden = true;
     svg.replaceChildren();
     const points = Array.isArray(history) ? history.filter((entry) => entry && finite(entry.hashrateHps) && Number.isFinite(Date.parse(entry.time))).sort((a, b) => Date.parse(a.time) - Date.parse(b.time)).slice(-120) : [];
     if (points.length < 2) {
       svg.setAttribute("hidden", "");
+      window.BDLPulseChart?.destroy(canvas);
       $("chart-empty").hidden = false;
       $("sample-count").textContent = t("Données non disponibles");
       return;
     }
+    if (frame) frame.hidden = false;
     svg.removeAttribute("hidden");
     $("chart-empty").hidden = true;
     const start = Date.parse(points[0].time), end = Date.parse(points.at(-1).time);
@@ -187,6 +193,9 @@
       svg.appendChild(text);
     }
     $("sample-count").textContent = points.length + t(" mesures · heure de Paris");
+    const drawn = canvas && window.BDLPulseChart?.render(canvas, points.map(p => ({t: Date.parse(p.time), value: p.hashrateHps})), {locale, label: "Hashrate", gapMs: 750000}) || false;
+    if (canvas) canvas.hidden = !drawn;
+    svg.toggleAttribute("hidden", drawn);
   }
   function timestampLabel(value) {
     const date = new Date(value);
@@ -297,6 +306,7 @@
       $("refresh-status").setAttribute("aria-busy", "false");
     }
   }
+  document.addEventListener("bdl-theme-change", () => { if (statusData) renderChart(statusData.history); });
   $("refresh-status").addEventListener("click", () => loadStatus(true));
   $("copy-host").addEventListener("click", () => { if (currentHost()) copy(currentHost()); });
   $("copy-port").addEventListener("click", () => copy(String(currentPort())));
