@@ -360,25 +360,25 @@
       + (english ? "\nUsername: " : "\nUtilisateur : ") + settings.username
       + "\n" + t("Mot de passe : ") + (settings.password === null ? t("Non utilisé") : settings.password));
   });
-  document.querySelector(".menu-toggle").addEventListener("click", (event) => {
-    const button = event.currentTarget;
-    const open = button.getAttribute("aria-expanded") !== "true";
-    button.setAttribute("aria-expanded", String(open));
-    button.setAttribute("aria-label", open ? t("Fermer le menu") : t("Ouvrir le menu"));
-    $("main-nav").classList.toggle("open", open);
-  });
-  document.querySelectorAll(".main-nav a").forEach((link) => link.addEventListener("click", () => {
-    $("main-nav").classList.remove("open");
-    document.querySelector(".menu-toggle").setAttribute("aria-expanded", "false");
-    document.querySelector(".menu-toggle").setAttribute("aria-label", t("Ouvrir le menu"));
-  }));
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      $("main-nav").classList.remove("open");
-      document.querySelector(".menu-toggle").setAttribute("aria-expanded", "false");
-      document.querySelector(".menu-toggle").setAttribute("aria-label", t("Ouvrir le menu"));
+  {
+    const toggle = document.querySelector(".menu-toggle"), nav = $("main-nav");
+    function setMenu(open) {
+      toggle.setAttribute("aria-expanded", String(open));
+      toggle.setAttribute("aria-label", t(open ? "Fermer le menu" : "Ouvrir le menu"));
+      nav.classList.toggle("open", open);
     }
-  });
+    toggle.addEventListener("click", () => setMenu(toggle.getAttribute("aria-expanded") !== "true"));
+    nav.querySelectorAll("a").forEach(link => link.addEventListener("click", () => setMenu(false)));
+    document.addEventListener("click", event => {
+      if (toggle.getAttribute("aria-expanded") === "true" && !toggle.closest(".site-header").contains(event.target)) setMenu(false);
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && toggle.getAttribute("aria-expanded") === "true") {
+        setMenu(false);
+        toggle.focus({preventScroll: true});
+      }
+    });
+  }
   // Follow section headings and include the compact FAQ at the end of the page.
   const navigationLinks = [...document.querySelectorAll('.main-nav a[href^="#"]')];
   const navigationSections = navigationLinks.map((link) => $(link.hash.slice(1)));
