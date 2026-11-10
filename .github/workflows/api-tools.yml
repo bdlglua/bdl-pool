@@ -1,0 +1,40 @@
+name: API tool checks
+on:
+  push:
+    branches: [main, "audit/**"]
+    paths: ["api/tools/**", "api/examples/**", ".github/workflows/api-tools.yml"]
+  pull_request:
+    paths: ["api/tools/**", "api/examples/**", ".github/workflows/api-tools.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  typescript:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - run: npm ci --ignore-scripts --prefix api/tools/discord-bot
+      - run: npm test --prefix api/tools/discord-bot
+      - run: npm ci --ignore-scripts --prefix api/examples/typescript
+      - run: npm run check --prefix api/examples/typescript
+  go:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.23"
+      - run: go test -C api/tools/prometheus-exporter -race -count=1 ./...
+      - run: go vet -C api/tools/prometheus-exporter ./...
+      - run: go test -C api/examples/go -race -count=1 ./...
+      - run: go vet -C api/examples/go ./...
+  rust:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.99.1
+      - run: cargo test --locked --manifest-path api/tools/pool-monitor/Cargo.toml
+      - run: cargo test --locked --manifest-path api/examples/rust/Cargo.toml

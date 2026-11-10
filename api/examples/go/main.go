@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -46,8 +47,13 @@ func run() error {
 	}
 
 	var health healthResponse
-	if err := json.NewDecoder(response.Body).Decode(&health); err != nil {
+	decoder := json.NewDecoder(response.Body)
+	if err := decoder.Decode(&health); err != nil {
 		return fmt.Errorf("decode health response: %w", err)
+	}
+	var extra json.RawMessage
+	if err := decoder.Decode(&extra); err != io.EOF {
+		return fmt.Errorf("decode health response: trailing data")
 	}
 	if health.APIVersion != "1" || health.Status != "ok" {
 		return fmt.Errorf("API returned an invalid health response")

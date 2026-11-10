@@ -5,7 +5,8 @@
   "scripts": {
     "build": "tsc",
     "deploy-commands": "npm run build && node dist/deploy-commands.js",
-    "start": "node dist/bot.js"
+    "start": "node dist/bot.js",
+    "test": "npm run build && node --test test/*.test.mjs"
   },
   "dependencies": {
     "discord.js": "^14.21.0"

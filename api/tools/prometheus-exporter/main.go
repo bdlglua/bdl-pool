@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -84,8 +85,13 @@ func (e *exporter) scrape(ctx context.Context) error {
 	}
 
 	var snapshot poolSnapshot
-	if err := json.NewDecoder(response.Body).Decode(&snapshot); err != nil {
+	decoder := json.NewDecoder(response.Body)
+	if err := decoder.Decode(&snapshot); err != nil {
 		return fail(fmt.Errorf("decode pool response: %w", err))
+	}
+	var extra json.RawMessage
+	if err := decoder.Decode(&extra); err != io.EOF {
+		return fail(errors.New("pool API returned trailing data after the snapshot"))
 	}
 	if snapshot.APIVersion != "1" || !validNumber(snapshot.Pool.HashrateHps) || !validNumber(snapshot.Pool.BestShare) {
 		return fail(errors.New("pool API returned an invalid snapshot"))
