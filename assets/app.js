@@ -258,6 +258,7 @@
     if (loading) return;
     loading = true;
     $("refresh-status").disabled = true;
+    $("refresh-status").setAttribute("aria-busy", "true");
     try {
       const url = new URL(config.statusUrl || "./data/status.json", document.baseURI);
       // Give each minute its own public raw-file cache entry. Manual refresh
@@ -293,6 +294,7 @@
     } finally {
       loading = false;
       $("refresh-status").disabled = false;
+      $("refresh-status").setAttribute("aria-busy", "false");
     }
   }
   $("refresh-status").addEventListener("click", () => loadStatus(true));

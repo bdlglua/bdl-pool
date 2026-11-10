@@ -183,6 +183,21 @@ h3 { font-weight: 650; }
 }
 .miners-refresh:hover, .miners-pagination button:hover,
 .icon-button:hover, .api-copy:hover { border-color: var(--muted); color: var(--text); }
+.status-refresh {
+  width: auto;
+  min-height: 38px;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  line-height: 20px;
+  white-space: nowrap;
+}
+.status-refresh .icon { width: 18px; height: 18px; }
+.status-refresh[aria-busy="true"] .icon { animation: refresh-spin .9s linear infinite; }
+@keyframes refresh-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .status-refresh[aria-busy="true"] .icon { animation: none; }
+}
 .endpoint-panel, .setup-form { padding: 24px; }
 .endpoint-block { border-color: var(--line); border-radius: 4px; background: var(--panel-alt); }
 .endpoint-field + .endpoint-field, .endpoint-copy-url { border-color: var(--line); }
@@ -214,6 +229,7 @@ h3 { font-weight: 650; }
 .faq-list details > p { color: var(--muted); }
 .site-footer { margin-top: 0; background: var(--bg2); border-color: var(--line); }
 .footer-bottom { border-color: var(--line); }
+.footer-inner > .footer-bottom:first-child { border-top: 0; }
 .toast { border-color: var(--line); border-radius: 5px; background: var(--panel); color: var(--text); }
 
 .api-docs { padding-top: 42px; }
