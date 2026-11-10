@@ -19,7 +19,7 @@ jobs:
       - run: npm ci --ignore-scripts --prefix api/tools/discord-bot
       - run: npm test --prefix api/tools/discord-bot
       - run: npm ci --ignore-scripts --prefix api/examples/typescript
-      - run: npm run build --prefix api/examples/typescript
+      - run: npm run check --prefix api/examples/typescript
   go:
     runs-on: ubuntu-24.04
     steps:
