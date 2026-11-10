@@ -77,3 +77,17 @@ func TestFailedScrapeMarksCachedSnapshotStale(t *testing.T) {
 		}
 	}
 }
+
+func TestScrapeRejectsTrailingJSON(t *testing.T) {
+    for _, suffix := range []string{" garbage", "\n{}"} {
+        t.Run(suffix, func(t *testing.T) {
+            api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+                _, _ = w.Write([]byte(samplePool + suffix))
+            }))
+            defer api.Close()
+            collector := newExporter(api.URL)
+            if err := collector.scrape(context.Background()); err == nil { t.Fatal("accepted trailing data after pool JSON") }
+            if strings.Contains(collector.metrics(), "bdl_pool_api_up 1") { t.Fatal("invalid response marked API up") }
+        })
+    }
+}
