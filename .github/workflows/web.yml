@@ -1,0 +1,75 @@
+name: Next.js website
+
+on:
+  push:
+    branches: [main, "codex/nextjs-16-migration"]
+    paths:
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "assets/**"
+      - "tests/**"
+      - "tools/prepare-public.mjs"
+      - "config.js"
+      - "data/**"
+      - "api/openapi.json"
+      - "CNAME"
+      - ".nojekyll"
+      - "package*.json"
+      - "*config.*"
+      - "next-env.d.ts"
+      - ".github/workflows/web.yml"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run typecheck
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-test-results
+          path: |
+            playwright-report/
+            test-results/
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: out
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Publish static Next.js export
+        id: deployment
+        uses: actions/deploy-pages@v4
