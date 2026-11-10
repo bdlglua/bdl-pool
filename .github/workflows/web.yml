@@ -70,6 +70,10 @@ jobs:
       - uses: actions/configure-pages@v5
         with:
           enablement: true
+      - name: Configure Pages to deploy the Next.js artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method PUT "repos/${GITHUB_REPOSITORY}/pages" -f build_type=workflow
       - name: Publish static Next.js export
         id: deployment
         uses: actions/deploy-pages@v4

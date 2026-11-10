@@ -53,9 +53,9 @@ Unknown or unavailable readings remain unknown; the public API is unchanged.
 migration branch are built and tested without deploying.
 
 For the first deployment, GitHub Pages must use **GitHub Actions** as its source
-(repository Settings → Pages → Build and deployment). The workflow attempts to
-enable this using `actions/configure-pages`; repository permissions may require
-the owner to select the source once. Keep the custom domain `bdl-pool.com` and
+(repository Settings → Pages → Build and deployment). The workflow enables Pages
+and configures this source using its Pages write permission; repository policies
+may require the owner to select the source once. Keep the custom domain `bdl-pool.com` and
 HTTPS enabled. No DNS, API or Stratum change is needed.
 
 The previous root HTML files remain as a temporary fallback for the existing
