@@ -1,0 +1,18 @@
+<section class="dashboard-section wrap category-page" id="dashboard" aria-labelledby="dashboard-title">
+      <div class="section-heading"><div><h1 id="dashboard-title">Statistiques</h1></div><div class="heading-actions"><span class="badge neutral" id="pool-badge">Chargement…</span><button type="button" id="refresh-status" class="icon-button status-refresh" aria-label="Actualiser le suivi" aria-busy="false"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-refresh"/></svg><span>Actualiser</span></button></div></div>
+      <p class="data-notice" id="data-notice">Chargement du dernier relevé…</p>
+
+      <div class="metrics-grid">
+        <article class="metric"><div class="metric-label">Hashrate</div><p class="metric-value" id="metric-hashrate">—</p></article>
+        <article class="metric"><div class="metric-label">Workers</div><p class="metric-value" id="metric-workers">—</p></article>
+        <article class="metric"><div class="metric-label">Meilleure share</div><p class="metric-value" id="metric-best">—</p></article>
+        <article class="metric"><div class="metric-label">Blocs trouvés</div><p class="metric-value" id="metric-blocks">—</p></article>
+      </div>
+
+
+
+      <div class="overview-grid stats-grid">
+        <article class="panel activity-panel"><div class="panel-heading"><h3>Hashrate</h3></div><div class="chart-area" id="chart-area"><div class="empty-chart" id="chart-empty"><strong>Aucune mesure</strong></div><div class="pulse-chart-frame" id="pool-chart-frame" hidden><canvas id="cryptoChart" role="img" aria-label="Historique du hashrate du pool" aria-describedby="sample-count" hidden></canvas><svg id="hash-chart" viewBox="0 0 640 170" role="img" aria-label="Évolution du hashrate mesuré" hidden></svg></div></div><div class="panel-foot"><span><span class="dot muted-dot"></span> <span id="activity-state">Aucune mesure reçue</span></span><span id="sample-count">Données non disponibles</span></div></article>
+
+      <article class="panel node-panel"><div class="panel-heading"><span class="node-heading-icon"><img src="/assets/crypgo/icon-bitcoin.svg" width="19" height="24" alt=""></span><h3>Nœud Bitcoin</h3></div><div class="node-status"><span class="badge amber" id="node-badge">Synchronisation</span><span class="quiet-label">MAINNET</span></div><p class="sync-value" id="sync-value">—<span> %</span></p><div class="progress-track" id="sync-progress" role="progressbar" aria-label="Progression estimée de la vérification" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="sync-fill"></div></div><div class="node-numbers"><span>Blocs validés<strong id="node-blocks">—</strong></span><span>En-têtes connus<strong id="node-headers">—</strong></span></div><p class="node-note" id="node-note">BDLPool démarrera après la synchronisation.</p></article></div>
+    </section>

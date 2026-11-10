@@ -1,19 +1,48 @@
 <!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light dark"><meta name="theme-color" content="#080f16">
-<meta name="description" content="Pool, Bitcoin address and worker statistics."><title>BDL Pool API</title>
-<link rel="canonical" href="https://bdl-pool.com/en/api/">
-<link rel="icon" type="image/svg+xml" sizes="any" href="../../assets/brand.svg?v=api-1">
-<script src="../../assets/theme.js?v=reference-2"></script>
-<link rel="stylesheet" href="../../assets/style.css?v=api-1"><link rel="stylesheet" href="../../assets/api.css?v=api-1"><link rel="stylesheet" href="../../assets/pool-theme.css?v=audit-3">
-<link rel="stylesheet" href="../../assets/pulse-theme.css?v=nav-audit-4">
-  <script src="../../assets/navigation.js?v=nav-audit-2" defer></script>
-<script src="../../assets/api.js?v=api-1" defer></script>
-</head><body>
-<header class="site-header"><div class="header-inner wrap"><a class="brand" href="../"><img src="../../assets/brand.svg" width="34" height="34" alt=""><span>BDL<span class="brand-light">Pool</span></span></a><nav class="api-header-links" aria-label="Navigation"><a href="../">Pool</a><a class="api-related" href="https://miner.bdl-pool.com">BDLMiner</a><a class="language-switch" href="../../api/" lang="fr">FR</a></nav></div></header>
-<main class="api-docs wrap" id="main"><h1>BDL Pool API</h1><p class="api-intro">Pool, Bitcoin address and worker statistics.</p>
-<section class="api-base" aria-labelledby="api-base-title"><h2 id="api-base-title">Base URL</h2><div class="api-base-url"><code id="api-base-url">https://api.bdl-pool.com:36018/api/v1</code><button type="button" class="api-copy" data-copy="api-base-url">Copy</button></div><div class="api-actions"><button type="button" id="api-health-test" class="button primary">Test API</button><a href="../../api/openapi.json">OpenAPI contract ↗</a></div><p id="api-message" role="status" aria-live="polite" hidden></p><pre id="api-health-result" hidden></pre></section>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#080f16">
+  <meta name="description" content="Pool, Bitcoin address and worker statistics through the public API.">
+  <title>API · BDL Pool</title>
+  <link rel="canonical" href="https://bdl-pool.com/en/api/">
+  <link rel="alternate" hreflang="fr" href="https://bdl-pool.com/api/">
+  <link rel="alternate" hreflang="en" href="https://bdl-pool.com/en/api/">
+  <link rel="alternate" hreflang="x-default" href="https://bdl-pool.com/api/">
+  <link rel="icon" type="image/svg+xml" sizes="any" href="/assets/brand.svg">
+  <script src="/assets/theme.js?v=33257f2569f1"></script>
+  <link rel="stylesheet" href="/assets/style.css?v=30f24ccabd5c">
+  <link rel="stylesheet" href="/assets/api.css?v=431382d37b50">
+  <link rel="stylesheet" href="/assets/pool-theme.css?v=1d25e036ef4c">
+  <link rel="stylesheet" href="/assets/pulse-theme.css?v=846532b9ebb8">
+  <link rel="stylesheet" href="/assets/pages.css?v=a12983b9d96c">
+  <script src="/assets/site.js?v=922c0554559e" defer></script>
+  <script src="/assets/navigation.js?v=d9dfc60a49c3" defer></script>
+  <script src="/assets/api.js?v=7de4fe6eee58" defer></script>
+</head>
+<body data-page="api" data-home="/en/" data-legacy="{}">
+<svg class="icon-sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="3"/><path d="M15 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5"/></symbol>
+    <symbol id="i-chip" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="3"/><path d="M9 2v4m6-4v4M9 18v4m6-4v4M2 9h4m-4 6h4m12-6h4m-4 6h4"/><rect x="10" y="10" width="4" height="4" rx="1"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="m13 2-9 12h7l-1 8 10-13h-7z"/></symbol>
+    <symbol id="i-cube" viewBox="0 0 24 24"><path d="m12 2 9 5v10l-9 5-9-5V7zM3 7l9 5 9-5M12 12v10"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
+    <symbol id="i-github" viewBox="0 0 24 24"><path d="M9 19c-4 1-4-2-6-2m12 5v-4a3.5 3.5 0 0 0-1-3c3-.3 6-1.5 6-6A5 5 0 0 0 19 6a4.5 4.5 0 0 0-.1-3S17.7 2.6 15 4a12 12 0 0 0-6 0C6.3 2.6 5.1 3 5.1 3A4.5 4.5 0 0 0 5 6a5 5 0 0 0-1 3c0 4.5 3 5.7 6 6a3.5 3.5 0 0 0-1 3v4"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="m12 2 8 4v6c0 5-8 10-8 10S4 17 4 12V6zM8 12l3 3 5-6"/></symbol>
+    <symbol id="i-network" viewBox="0 0 24 24"><circle cx="12" cy="4" r="2"/><circle cx="5" cy="20" r="2"/><circle cx="19" cy="20" r="2"/><path d="M12 6v6M5 18v-6h14v6"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 3h7v7m0-7L10 14m-1-9H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 .5c0 1.5-2.5 2-2.5 3.5m0 3h.01"/></symbol>
+  </defs></svg>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header"><div class="header-inner wrap"><a class="brand" href="/en/" aria-label="BDL Pool, home"><img src="/assets/brand.svg" width="34" height="34" alt=""><span>BDL<span class="brand-light">Pool</span></span></a><nav id="main-nav" class="main-nav" aria-label="Main navigation"><a href="/en/">Home</a><a href="/en/statistics/">Statistics</a><a href="/en/miners/">Miners</a><a href="/en/connect/">Connection</a><a href="/en/faq/">FAQ</a><a href="/en/api/" class="active" aria-current="page">API</a><a href="https://miner.bdl-pool.com">BDLMiner</a></nav><div class="header-actions"><a class="language-switch" href="/api/" lang="fr" hreflang="fr" aria-label="Passer en français">FR</a><a class="header-github" href="https://github.com/bdlglua/bdl-pool" target="_blank" rel="noopener noreferrer">GitHub <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></a><button class="menu-toggle" type="button" aria-label="Open menu" aria-controls="main-nav" aria-expanded="false"><span></span><span></span><span></span></button></div></div></header>
+  <main id="main" class="api-docs wrap category-page">
+<h1>BDL Pool API</h1><p class="api-intro">Pool, Bitcoin address and worker statistics.</p>
+<section class="api-base" aria-labelledby="api-base-title"><h2 id="api-base-title">Base URL</h2><div class="api-base-url"><code id="api-base-url">https://api.bdl-pool.com:36018/api/v1</code><button type="button" class="api-copy" data-copy="api-base-url">Copy</button></div><div class="api-actions"><button type="button" id="api-health-test" class="button primary">Test API</button><a href="/api/openapi.json">OpenAPI contract ↗</a></div><p id="api-message" role="status" aria-live="polite" hidden></p><pre id="api-health-result" hidden></pre></section>
 <section aria-labelledby="api-routes-title"><h2 id="api-routes-title">Endpoints</h2><table><thead><tr><th scope="col">URL</th><th scope="col">Response</th></tr></thead><tbody><tr><td><code>GET /online?limit=50&amp;offset=0</code></td><td>Active connections, shortened addresses and advertised devices.</td></tr><tr><td><code>GET /health</code></td><td>API process health</td></tr><tr><td><code>GET /pool</code></td><td>Global pool and Bitcoin node statistics</td></tr><tr><td><code>GET /history</code></td><td>Hashrate history</td></tr><tr><td><code>GET /stratum</code></td><td>Address, ports and V2 public key</td></tr><tr><td><code>GET /miners/{address}</code></td><td>Statistics for one Bitcoin address</td></tr><tr><td><code>GET /miners/{address}/workers?limit=50&amp;offset=0</code></td><td>Workers for one address</td></tr><tr><td><code>GET /miners/{address}/workers/{worker}</code></td><td>Statistics for one worker</td></tr><tr><td><code>GET /openapi.json</code></td><td>OpenAPI 3.1 specification</td></tr></tbody></table></section>
 <section aria-labelledby="api-examples-title"><h2 id="api-examples-title">Examples</h2><div class="api-code-heading"><h3>cURL</h3><button type="button" class="api-copy" data-copy="api-curl">Copy</button></div><pre><code id="api-curl">curl https://api.bdl-pool.com:36018/api/v1/pool
 curl &quot;https://api.bdl-pool.com:36018/api/v1/miners/YOUR_BITCOIN_ADDRESS/workers?limit=50&amp;offset=0&quot;</code></pre><div class="api-code-heading"><h3>JavaScript</h3><button type="button" class="api-copy" data-copy="api-javascript">Copy</button></div><pre><code id="api-javascript">const base = &quot;https://api.bdl-pool.com:36018/api/v1&quot;;
@@ -71,5 +100,10 @@ func main() {
 }</code></pre><p><a href="https://github.com/bdlglua/bdl-pool/tree/main/api/examples">Runnable TypeScript, Rust, and Go clients</a> · <a href="https://github.com/bdlglua/bdl-pool/tree/main/api/tools">Monitoring, Discord bot, and Prometheus exporter</a></p></section>
 <section aria-labelledby="api-format-title"><h2 id="api-format-title">Data format</h2><dl class="api-facts"><dt>Presence</dt><dd>Connections are checked every 15 seconds. available=false means that their state is unconfirmed.</dd><dt>Device</dt><dd>Hardware model advertised in the Stratum user-agent, otherwise the software name. Missing models remain null.</dd><dt>Updates</dt><dd>Global statistics update every five minutes. Worker statistics follow CKPool.</dd><dt>Dates</dt><dd>updatedAt is the measurement time. stale marks an old reading.</dd><dt>Hashrate</dt><dd>All hashrateHps values are H/s. Unknown values remain null.</dd><dt>Addresses</dt><dd>Use a Bitcoin mainnet address without a worker suffix. CKPool creates its statistics after its first recorded share.</dd><dt>Workers</dt><dd>limit defaults to 50, up to 200. Use offset for pagination. Full worker names avoid ambiguity.</dd><dt>Availability</dt><dd>readyAtLastCheck refers to the last Stratum V1 check. It does not confirm a V2 connection.</dd><dt>Access</dt><dd>Read-only, without authentication. GET, HEAD and OPTIONS; public CORS. No directory of miner addresses is exposed.</dd></dl></section>
 <section aria-labelledby="api-errors-title"><h2 id="api-errors-title">HTTP codes</h2><dl class="api-facts api-errors"><dt><code>200</code></dt><dd>Data is available; check stale for older readings.</dd><dt><code>304</code></dt><dd>Unchanged response for this ETag.</dd><dt><code>400</code></dt><dd>Invalid address or parameters.</dd><dt><code>404</code></dt><dd>Endpoint, address or worker not found.</dd><dt><code>405</code></dt><dd>Write method not allowed.</dd><dt><code>503</code></dt><dd>Statistics source unavailable.</dd></dl></section>
-</main><footer class="site-footer"><div class="footer-inner wrap"><div class="footer-bottom"><span>© BDL Pool</span><a href="https://github.com/bdlglua/bdl-pool/tree/main/api">GitHub</a></div></div></footer>
-</body></html>
+
+  </main>
+<footer class="site-footer"><div class="footer-inner wrap"><nav class="footer-pages" aria-label="All pages"><a href="/en/">Home</a><a href="/en/statistics/">Statistics</a><a href="/en/miners/">Miners</a><a href="/en/connect/">Connection</a><a href="/en/faq/">FAQ</a><a href="/en/api/" class="active" aria-current="page">API</a><a href="https://miner.bdl-pool.com">BDLMiner</a></nav><div class="footer-top"><a class="brand" href="/en/" aria-label="BDL Pool, home"><img src="/assets/brand.svg" width="34" height="34" alt=""><span>BDL<span class="brand-light">Pool</span></span></a><p>Solo Bitcoin pool</p><a href="https://github.com/bdlglua/bdl-pool" target="_blank" rel="noopener noreferrer">GitHub <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></a></div><div class="footer-bottom"><span>© BDL Pool</span><a href="https://github.com/bdlglua" target="_blank" rel="noopener noreferrer">bdlglua</a></div></div></footer>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <noscript><p class="noscript-message">Enable JavaScript for live readings and miner settings. Stratum V1 : stratum.bdl-pool.com:39991 · Stratum V2 : stratum.bdl-pool.com:36809.</p></noscript>
+</body>
+</html>

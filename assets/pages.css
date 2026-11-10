@@ -1,0 +1,26 @@
+/* Layout for the pool's separate category pages. */
+body { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+body > main { flex: 1; }
+.site-header, .site-footer { flex-shrink: 0; }
+.category-page { padding-block: 52px 36px; border-top: 0; }
+.section-heading h1, .faq-intro h1, .api-docs > h1 { margin: 0; font-size: clamp(30px, 4vw, 42px); line-height: 1.15; letter-spacing: -.035em; }
+.home-status { margin-top: 24px; }
+.home-status .heading-actions { justify-content: center; }
+.home-status .data-notice { margin: 12px 0 0; font-size: 11px; }
+.home-categories { padding-block: 0 44px; }
+.stats-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 24px; }
+.stats-grid .activity-panel { margin: 0; }
+.stats-grid .node-panel { overflow: hidden; }
+.stats-grid .node-numbers { padding: 24px 28px; }
+.stats-grid .sync-value { font-size: 46px; margin-block: 24px; }
+.stats-grid .node-note { margin-bottom: 0; }
+.footer-pages { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 12px 24px; padding: 24px 0 0; font-size: 13px; }
+.footer-pages a { color: var(--label); text-decoration: none; }
+.footer-pages a:hover, .footer-pages a[aria-current="page"] { color: var(--accent); }
+@media (max-width: 900px) { .stats-grid { grid-template-columns: 1fr; } }
+@media (max-width: 760px) {
+ .category-page { padding-block: 38px 28px; }
+ .home-status .heading-actions { gap: 12px; }
+ .home-categories { padding-bottom: 28px; }
+ .footer-pages { gap: 12px 20px; }
+}

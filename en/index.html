@@ -5,24 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#080f16">
-  <meta name="description" content="BDL Pool, a solo Bitcoin pool. Node status, Stratum connection and miner settings.">
+  <meta name="description" content="Independent Bitcoin solo pool, Stratum V1/V2 connections and Bitcoin node status.">
   <title>BDL Pool</title>
   <link rel="canonical" href="https://bdl-pool.com/en/">
-  <link rel="icon" type="image/svg+xml" sizes="any" href="../assets/brand.svg?v=miners-1">
-  <script src="../assets/theme.js?v=reference-2"></script>
-  <link rel="stylesheet" href="../assets/style.css?v=openport-1">
-  <link rel="stylesheet" href="../assets/miners.css?v=miners-1">
-  <link rel="stylesheet" href="../assets/pool-theme.css?v=audit-3">
-  <link rel="stylesheet" href="../assets/pulse-theme.css?v=nav-audit-4">
-  <script src="../assets/navigation.js?v=nav-audit-2" defer></script>
-  <script src="../assets/vendor/chart.umd.min.js?v=4.5.1" defer></script>
-  <script src="../assets/pulse-chart.js?v=pulse-1" defer></script>
-  <script src="../config.js?v=website-1" defer></script>
-  <script src="../assets/app.js?v=nav-audit-4" defer></script>
-  <script src="../assets/miners.js?v=audit-3" defer></script>
+  <link rel="alternate" hreflang="fr" href="https://bdl-pool.com/">
+  <link rel="alternate" hreflang="en" href="https://bdl-pool.com/en/">
+  <link rel="alternate" hreflang="x-default" href="https://bdl-pool.com/">
+  <link rel="icon" type="image/svg+xml" sizes="any" href="/assets/brand.svg">
+  <script src="/assets/theme.js?v=33257f2569f1"></script>
+  <link rel="stylesheet" href="/assets/style.css?v=30f24ccabd5c">
+  <link rel="stylesheet" href="/assets/pool-theme.css?v=1d25e036ef4c">
+  <link rel="stylesheet" href="/assets/pulse-theme.css?v=846532b9ebb8">
+  <link rel="stylesheet" href="/assets/pages.css?v=a12983b9d96c">
+  <script src="/assets/site.js?v=922c0554559e" defer></script>
+  <script src="/assets/navigation.js?v=d9dfc60a49c3" defer></script>
+  <script src="/config.js?v=f9746ea68258" defer></script>
+  <script src="/assets/app.js?v=76cb2076ce3d" defer></script>
 </head>
-<body>
-  <svg class="icon-sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+<body data-page="home" data-home="/en/" data-legacy="{&quot;dashboard&quot;: &quot;/en/statistics/&quot;, &quot;mineurs&quot;: &quot;/en/miners/&quot;, &quot;connexion&quot;: &quot;/en/connect/&quot;, &quot;faq&quot;: &quot;/en/faq/&quot;}">
+<svg class="icon-sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
     <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="3"/><path d="M15 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3"/></symbol>
     <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5"/></symbol>
@@ -38,91 +39,23 @@
   </defs></svg>
 
   <a class="skip-link" href="#main">Skip to content</a>
-  <header class="site-header">
-    <div class="header-inner wrap">
-      <a class="brand" href="#accueil" aria-label="BDL Pool, home"><img src="../assets/brand.svg" width="34" height="34" alt=""><span>BDL<span class="brand-light">Pool</span></span></a>
-      <nav id="main-nav" class="main-nav" aria-label="Main navigation"><a href="#dashboard" class="active">Pool status</a><a href="#mineurs">Miners</a><a href="#connexion">Connection</a><a href="#faq">FAQ</a><a href="./api/">API</a><a href="https://miner.bdl-pool.com">BDLMiner</a></nav>
-      <div class="header-actions"><a class="language-switch" href="../" lang="fr" hreflang="fr" aria-label="Passer en français">FR</a><a class="header-github" href="https://github.com/bdlglua/bdl-pool" target="_blank" rel="noopener noreferrer">GitHub <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></a><button class="menu-toggle" type="button" aria-label="Open menu" aria-controls="main-nav" aria-expanded="false"><span></span><span></span><span></span></button></div>
-    </div>
-  </header>
-
-  <main id="main">
-    <section class="hero wrap hero-stage" id="accueil" aria-labelledby="hero-title">
+<header class="site-header"><div class="header-inner wrap"><a class="brand" href="/en/" aria-label="BDL Pool, home"><img src="/assets/brand.svg" width="34" height="34" alt=""><span>BDL<span class="brand-light">Pool</span></span></a><nav id="main-nav" class="main-nav" aria-label="Main navigation"><a href="/en/" class="active" aria-current="page">Home</a><a href="/en/statistics/">Statistics</a><a href="/en/miners/">Miners</a><a href="/en/connect/">Connection</a><a href="/en/faq/">FAQ</a><a href="/en/api/">API</a><a href="https://miner.bdl-pool.com">BDLMiner</a></nav><div class="header-actions"><a class="language-switch" href="/" lang="fr" hreflang="fr" aria-label="Passer en français">FR</a><a class="header-github" href="https://github.com/bdlglua/bdl-pool" target="_blank" rel="noopener noreferrer">GitHub <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></a><button class="menu-toggle" type="button" aria-label="Open menu" aria-controls="main-nav" aria-expanded="false"><span></span><span></span><span></span></button></div></div></header>
+  <main id="main" class="">
+<section class="hero wrap hero-stage" id="accueil" aria-labelledby="hero-title">
       <div class="hero-copy">
         <h1 id="hero-title">Solo Bitcoin mining,<br><span class="hero-accent">with BDL Pool.</span></h1>
         <p class="hero-description">Stratum V1 and Stratum V2 connections.</p>
-        <div class="hero-actions"><a href="#connexion" class="button primary">Connect a miner<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a><a href="#dashboard" class="text-link">Statistics<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div>
-
+        <div class="hero-actions"><a href="/en/connect/" class="button primary">Connect a miner<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a><a href="/en/statistics/" class="text-link">Statistics<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a></div>
+        <div class="home-status"><div class="heading-actions"><span class="badge neutral" id="pool-badge">Loading…</span><button type="button" id="refresh-status" class="icon-button status-refresh" aria-label="Refresh status" aria-busy="false"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-refresh"/></svg><span>Refresh</span></button></div><p class="data-notice" id="data-notice">Loading latest snapshot…</p></div>
       </div>
-      <div class="hero-visual"><article class="panel node-panel"><div class="panel-heading"><span class="node-heading-icon"><img src="../assets/crypgo/icon-bitcoin.svg" width="19" height="24" alt=""></span><h3>Bitcoin node</h3></div><div class="node-status"><span class="badge amber" id="node-badge">Sync</span><span class="quiet-label">MAINNET</span></div><p class="sync-value" id="sync-value">—<span> %</span></p><div class="progress-track" id="sync-progress" role="progressbar" aria-label="Estimated verification progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="sync-fill"></div></div><div class="node-numbers"><span>Validated blocks<strong id="node-blocks">—</strong></span><span>Known headers<strong id="node-headers">—</strong></span></div><p class="node-note" id="node-note">BDLPool will start after syncing.</p></article></div>
-      <img class="hero-network" src="../assets/pulse-orbit.svg" width="360" height="340" alt="" aria-hidden="true">
+      <div class="hero-visual"><article class="panel node-panel"><div class="panel-heading"><span class="node-heading-icon"><img src="/assets/crypgo/icon-bitcoin.svg" width="19" height="24" alt=""></span><h3>Bitcoin node</h3></div><div class="node-status"><span class="badge amber" id="node-badge">Sync</span><span class="quiet-label">MAINNET</span></div><p class="sync-value" id="sync-value">—<span> %</span></p><div class="progress-track" id="sync-progress" role="progressbar" aria-label="Estimated verification progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="sync-fill"></div></div><div class="node-numbers"><span>Validated blocks<strong id="node-blocks">—</strong></span><span>Known headers<strong id="node-headers">—</strong></span></div><p class="node-note" id="node-note">BDLPool will start after syncing.</p></article></div>
+      <img class="hero-network" src="/assets/pulse-orbit.svg" width="360" height="340" alt="" aria-hidden="true">
     </section>
+<section class="home-categories wrap"><div class="pulse-shortcuts" aria-label="Quick links"><a href="/en/connect/?protocol=v1"><img src="/assets/pulse-hardware.svg" width="72" height="72" alt=""><span>Stratum V1</span></a><a href="/en/connect/?protocol=v2"><img src="/assets/pulse-link.svg" width="72" height="72" alt=""><span>Stratum V2</span></a><a href="/en/statistics/"><img src="/assets/pulse-chart.svg" width="72" height="72" alt=""><span>Statistics</span></a><a href="/en/miners/"><img src="/assets/pulse-shield.svg" width="72" height="72" alt=""><span>Workers</span></a><a href="/en/api/"><img src="/assets/pulse-flash.svg" width="72" height="72" alt=""><span>API</span></a><a href="https://miner.bdl-pool.com"><img src="/assets/pulse-network.svg" width="72" height="72" alt=""><span>BDLMiner</span></a></div></section>
 
-    <section class="dashboard-section wrap" id="dashboard" aria-labelledby="dashboard-title">
-      <div class="section-heading"><div><h2 id="dashboard-title">Statistics</h2></div><div class="heading-actions"><span class="badge neutral" id="pool-badge">Loading…</span><button type="button" id="refresh-status" class="icon-button status-refresh" aria-label="Refresh status" aria-busy="false"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-refresh"/></svg><span>Refresh</span></button></div></div>
-      <p class="data-notice" id="data-notice">Loading latest snapshot…</p>
-
-      <div class="metrics-grid">
-        <article class="metric"><div class="metric-label">Hashrate</div><p class="metric-value" id="metric-hashrate">—</p></article>
-        <article class="metric"><div class="metric-label">Workers</div><p class="metric-value" id="metric-workers">—</p></article>
-        <article class="metric"><div class="metric-label">Best share</div><p class="metric-value" id="metric-best">—</p></article>
-        <article class="metric"><div class="metric-label">Blocks found</div><p class="metric-value" id="metric-blocks">—</p></article>
-      </div>
-
-      <div class="pulse-shortcuts" aria-label="Quick links"><a href="#connexion" data-protocol-link="v1"><img src="../assets/pulse-hardware.svg" width="72" height="72" alt=""><span>Stratum V1</span></a><a href="#connexion" data-protocol-link="v2"><img src="../assets/pulse-link.svg" width="72" height="72" alt=""><span>Stratum V2</span></a><a href="#dashboard"><img src="../assets/pulse-chart.svg" width="72" height="72" alt=""><span>Statistics</span></a><a href="#mineurs"><img src="../assets/pulse-shield.svg" width="72" height="72" alt=""><span>Workers</span></a><a href="./api/"><img src="../assets/pulse-flash.svg" width="72" height="72" alt=""><span>API</span></a><a href="https://miner.bdl-pool.com"><img src="../assets/pulse-network.svg" width="72" height="72" alt=""><span>BDLMiner</span></a></div>
-
-      <div class="overview-grid">
-        <article class="panel activity-panel"><div class="panel-heading"><h3>Hashrate</h3></div><div class="chart-area" id="chart-area"><div class="empty-chart" id="chart-empty"><strong>No measurements</strong></div><div class="pulse-chart-frame" id="pool-chart-frame" hidden><canvas id="cryptoChart" role="img" aria-label="Pool hashrate history" aria-describedby="sample-count" hidden></canvas><svg id="hash-chart" viewBox="0 0 640 170" role="img" aria-label="Measured hashrate over time" hidden></svg></div></div><div class="panel-foot"><span><span class="dot muted-dot"></span> <span id="activity-state">No measurements received</span></span><span id="sample-count">No data available</span></div></article>
-
-      </div>
-    </section>
-
-    <section class="miners-section wrap" id="mineurs" aria-labelledby="miners-title">
-      <div class="section-heading"><h2 id="miners-title">Miners</h2><button type="button" id="refresh-miners" class="miners-refresh">Refresh</button></div>
-      <form id="miner-search" class="miner-search" novalidate>
-        <label for="miner-lookup-address">Statistics by Bitcoin address</label>
-        <div class="miner-search-row"><input id="miner-lookup-address" placeholder="bc1…, 1… or 3…" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="miner-search-message"><button type="submit" class="button primary">Search</button></div>
-        <p id="miner-search-message" class="miners-message" role="status" aria-live="polite" hidden></p>
-      </form>
-      <div id="miner-statistics" class="miner-statistics" hidden>
-        <div class="miner-detail-heading"><div><h3>Address statistics</h3><code id="selected-miner-address"></code></div><span id="miner-stats-updated" class="miners-updated"></span></div>
-        <div class="metrics-grid miner-summary">
-          <article class="metric"><div class="metric-label">Hashrate · 5 min</div><p class="metric-value" id="personal-hashrate">—</p></article>
-          <article class="metric"><div class="metric-label">Connections</div><p class="metric-value" id="personal-connections">—</p></article>
-          <article class="metric"><div class="metric-label">Shares</div><p class="metric-value" id="personal-shares">—</p></article>
-          <article class="metric"><div class="metric-label">Best difficulty</div><p class="metric-value" id="personal-best">—</p></article>
-        </div>
-        <div class="miners-table-wrap"><table class="miners-table"><thead><tr><th scope="col">Worker</th><th scope="col">Device</th><th scope="col">Status</th><th scope="col">Hashrate · 5 min</th><th scope="col">Best difficulty</th></tr></thead><tbody id="personal-workers"></tbody></table></div>
-        <div class="miners-pagination" id="personal-pagination" hidden><button type="button" id="personal-previous">Previous</button><span id="personal-page"></span><button type="button" id="personal-next">Next</button></div>
-      </div>
-      <div class="online-miners">
-        <div class="miner-detail-heading"><h3>Online miners</h3><span id="online-count" class="miners-updated">—</span></div>
-        <p id="online-message" class="miners-message" role="status">Loading…</p>
-        <div class="miners-table-wrap" id="online-table-wrap" hidden><table class="miners-table"><thead><tr><th scope="col">Device</th><th scope="col">BTC address</th><th scope="col">Worker</th><th scope="col">Hashrate · 5 min</th><th scope="col" title="Best difficulty reported by BDLPool">Best difficulty</th></tr></thead><tbody id="online-miners-body"></tbody></table></div>
-        <div class="online-footer"><span id="online-updated" class="miners-updated"></span><div class="miners-pagination" id="online-pagination" hidden><button type="button" id="online-previous">Previous</button><span id="online-page"></span><button type="button" id="online-next">Next</button></div></div>
-      </div>
-    </section>
-
-    <section class="connection-section wrap" id="connexion" aria-labelledby="connection-title">
-      <div class="section-heading"><div><h2 id="connection-title">Connection</h2></div></div>
-      <div class="connection-grid">
-        <div class="panel endpoint-panel"><div class="panel-heading"><h3>Stratum</h3></div><div class="protocol-selector" role="group" aria-label="Stratum protocol"><button type="button" class="selected" data-protocol="v1" aria-pressed="true">Stratum V1</button><button type="button" data-protocol="v2" aria-pressed="false">Stratum V2</button></div><p id="protocol-note" class="protocol-note" hidden></p><div class="endpoint-block">
-          <dl class="endpoint-fields">
-            <div class="endpoint-field"><dt>Address</dt><dd><code id="endpoint-host">stratum.bdl-pool.com</code><button type="button" id="copy-host" class="icon-button" aria-label="Copy server address"><svg class="icon"><use href="#i-copy"/></svg></button></dd></div>
-            <div class="endpoint-field"><dt>Port</dt><dd><code id="endpoint-port">39991</code><button type="button" id="copy-port" class="icon-button" aria-label="Copy port"><svg class="icon"><use href="#i-copy"/></svg></button></dd></div>
-            <div class="endpoint-field endpoint-key" id="endpoint-key-row" hidden><dt>Public encryption key</dt><dd><code id="endpoint-key">—</code><button type="button" id="copy-key" class="icon-button" aria-label="Copy public key"><svg class="icon"><use href="#i-copy"/></svg></button></dd></div>
-          </dl>
-          <button type="button" id="copy-url" class="endpoint-copy-url"><svg class="icon"><use href="#i-copy"/></svg><span>Copy full URL</span></button>
-        </div><div class="availability-note" id="connection-availability"><span class="dot"></span><span>Pool status unconfirmed.</span></div></div>
-        <form class="panel setup-form" id="miner-form" novalidate><div class="panel-heading"><h3>Miner settings</h3></div><label for="btc-address"><span>Bitcoin address</span></label><input id="btc-address" name="address" placeholder="bc1…, 1… or 3…" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="form-error"><label for="worker-name"><span>Worker name</span><span class="optional">optional</span></label><input id="worker-name" name="worker" placeholder="bitaxe-01" maxlength="32" autocomplete="off" spellcheck="false"><p class="form-error" id="form-error" role="alert" hidden></p><button type="submit" class="button primary form-submit"><span>Show settings</span><svg class="icon"><use href="#i-arrow"/></svg></button><div id="miner-result" class="miner-result" hidden><div class="result-heading"><strong>Copy into your miner</strong><button type="button" class="icon-button" id="copy-settings" aria-label="Copy all settings"><svg class="icon"><use href="#i-copy"/></svg></button></div><dl><div><dt>Stratum URL</dt><dd id="result-url"></dd></div><div><dt>Address</dt><dd id="result-host"></dd></div><div><dt>Port</dt><dd id="result-port"></dd></div><div id="result-key-row" hidden><dt>Public encryption key</dt><dd id="result-key"></dd></div><div><dt>Username</dt><dd id="result-user"></dd></div><div><dt>Password</dt><dd id="result-password">x</dd></div></dl></div></form>
-      </div>
-    </section>
-
-    <section class="faq-section wrap" id="faq" aria-labelledby="faq-title"><div class="faq-intro"><h2 id="faq-title">FAQ</h2></div><div class="faq-list"><details><summary>Is the pool available?<span>+</span></summary><p id="faq-availability">Pool status unconfirmed.</p></details><details><summary>Can I connect over the Internet?<span>+</span></summary><p>Yes. Use stratum.bdl-pool.com: port 39991 for V1 or 36809 for V2.</p></details><details><summary>Does each share earn a reward?<span>+</span></summary><p>No. A reward requires a block accepted by the Bitcoin network. It matures after 100 blocks.</p></details></div></section>
   </main>
-
-  <footer class="site-footer"><div class="footer-inner wrap"><div class="footer-top"><a class="brand" href="#accueil" aria-label="BDL Pool, home"><img src="../assets/brand.svg" width="34" height="34" alt=""><span>BDL<span class="brand-light">Pool</span></span></a><p>Solo Bitcoin pool</p><a href="https://github.com/bdlglua/bdl-pool" target="_blank" rel="noopener noreferrer">GitHub <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></a></div><div class="footer-bottom"><span>© BDL Pool</span><a href="https://github.com/bdlglua" target="_blank" rel="noopener noreferrer">bdlglua</a></div></div></footer>
+<footer class="site-footer"><div class="footer-inner wrap"><nav class="footer-pages" aria-label="All pages"><a href="/en/" class="active" aria-current="page">Home</a><a href="/en/statistics/">Statistics</a><a href="/en/miners/">Miners</a><a href="/en/connect/">Connection</a><a href="/en/faq/">FAQ</a><a href="/en/api/">API</a><a href="https://miner.bdl-pool.com">BDLMiner</a></nav><div class="footer-top"><a class="brand" href="/en/" aria-label="BDL Pool, home"><img src="/assets/brand.svg" width="34" height="34" alt=""><span>BDL<span class="brand-light">Pool</span></span></a><p>Solo Bitcoin pool</p><a href="https://github.com/bdlglua/bdl-pool" target="_blank" rel="noopener noreferrer">GitHub <svg class="icon" aria-hidden="true"><use href="#i-external"/></svg></a></div><div class="footer-bottom"><span>© BDL Pool</span><a href="https://github.com/bdlglua" target="_blank" rel="noopener noreferrer">bdlglua</a></div></div></footer>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-  <noscript>Enable JavaScript to load monitoring data and generate miner settings. Stratum V1 server: stratum.bdl-pool.com:39991 and Stratum V2 server: stratum.bdl-pool.com:36809 with public key: 9c9DhUCzDsSZaCgKJitKKcngq24FLrqfJ9kUQzhxLiiSvAGuhna</noscript>
+  <noscript><p class="noscript-message">Enable JavaScript for live readings and miner settings. Stratum V1 : stratum.bdl-pool.com:39991 · Stratum V2 : stratum.bdl-pool.com:36809.</p></noscript>
 </body>
 </html>

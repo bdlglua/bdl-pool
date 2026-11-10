@@ -1,5 +1,6 @@
 (() => {
   'use strict';
+  if (!document.getElementById('miner-search')) return;
   const en = document.documentElement.lang === 'en';
   const locale = en ? 'en-GB' : 'fr-FR';
   const t = (fr, english) => en ? english : fr;

@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /site/
+Disallow: /tools/
+Sitemap: https://bdl-pool.com/sitemap.xml
