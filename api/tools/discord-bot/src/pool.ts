@@ -96,14 +96,28 @@ function makeEmbed(snapshot: PoolSnapshot): EmbedBuilder {
   return embed;
 }
 
-async function replyWithPool(interaction: ChatInputCommandInteraction): Promise<void> {
-  await interaction.deferReply({ ephemeral: true });
+async function replyWithPool(
+  interaction: ChatInputCommandInteraction,
+  reportError: (error: unknown) => void = error => console.error(
+    "Pool command failed:", error instanceof Error ? error.message : "Discord request failed",
+  ),
+): Promise<void> {
+  try {
+    await interaction.deferReply({ ephemeral: true });
+  } catch (error) {
+    reportError(error);
+    return;
+  }
   try {
     const snapshot = await getPool();
     await interaction.editReply({ embeds: [makeEmbed(snapshot)] });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erreur de lecture de l’API";
-    await interaction.editReply(`Impossible de lire l’état du pool : ${message}`);
+    try {
+      await interaction.editReply(`Impossible de lire l’état du pool : ${message}`);
+    } catch (replyError) {
+      reportError(replyError);
+    }
   }
 }
 
