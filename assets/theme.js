@@ -38,7 +38,7 @@
     button.setAttribute("aria-label", label);
     button.setAttribute("title", label);
     button.setAttribute("aria-pressed", String(dark));
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#070913" : "#f6f7fc");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#080f16" : "#f6f7fc");
   }
 
   function addButton() {

@@ -307,6 +307,9 @@
     }
   }
   document.addEventListener("bdl-theme-change", () => { if (statusData) renderChart(statusData.history); });
+  document.querySelectorAll("[data-protocol-link]").forEach(link => link.addEventListener("click", () => {
+    document.querySelector('[data-protocol="' + link.dataset.protocolLink + '"]')?.click();
+  }));
   $("refresh-status").addEventListener("click", () => loadStatus(true));
   $("copy-host").addEventListener("click", () => { if (currentHost()) copy(currentHost()); });
   $("copy-port").addEventListener("click", () => copy(String(currentPort())));
