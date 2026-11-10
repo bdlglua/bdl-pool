@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "source": "snapshot",
-  "updatedAt": "2026-11-10T13:46:16Z",
+  "updatedAt": "2026-11-10T13:52:00Z",
   "node": {
     "chain": "main",
     "blocks": 613734,
@@ -19,7 +19,7 @@
   },
   "history": [],
   "checks": {
-    "bitcoin": "ok",
+    "bitcoin": "stale",
     "poolStats": "missing",
     "stratum": "not_checked"
   }
