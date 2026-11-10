@@ -79,7 +79,8 @@ staged = destination.with_suffix('.tmp')
 staged.write_text(json.dumps(settings, indent=2)+'\n')
 staged.chmod(0o600)
 os.replace(staged, destination)
-caddy.write_text(api_host+' {\n'+tls_line+'''    handle /api/v1/* {
+caddy.write_text(api_host+' {\n'+tls_line+'''    import /etc/caddy/bdlminer-routes/*.caddy
+    handle /api/v1/* {
         reverse_proxy 127.0.0.1:8081 {
             transport http {
                 dial_timeout 3s
@@ -183,7 +184,7 @@ for attempt in range(10):
 else:
     raise SystemExit('L’API locale ne répond pas. Vérifier : journalctl -u bdl-pool-api -n 20 --no-pager')
 PY
-sudo install -d -m 755 /etc/caddy/conf.d
+sudo install -d -m 755 /etc/caddy/conf.d /etc/caddy/bdlminer-routes
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 backup="/etc/caddy/Caddyfile.before-bdl-api-$stamp"
 fragment=/etc/caddy/conf.d/bdl-pool-api.caddy

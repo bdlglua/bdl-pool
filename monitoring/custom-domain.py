@@ -136,8 +136,8 @@ def deploy(dns):
 
 
 def site(host, directory):
-    return host+' {\n    tls '+str(directory)+'/current/fullchain.pem '+str(directory)+'''/current/privkey.pem
-    handle /api/v1/* {
+    extra = '    import /etc/caddy/bdlminer-routes/*.caddy\n' if host == API_DOMAIN else ''
+    return host+' {\n    tls '+str(directory)+'/current/fullchain.pem '+str(directory)+'/current/privkey.pem\n'+extra+'''    handle /api/v1/* {
         reverse_proxy 127.0.0.1:8081 {
             transport http {
                 dial_timeout 3s
@@ -175,7 +175,9 @@ def activate(dns, ports, previous):
     owner = API_CONFIG.stat()
     if originals[LEGACY] is not None and originals[LEGACY] != site(OLD_DOMAIN, Path('/etc/caddy/bdl-pool-tls')).encode():
         raise DomainError('Le fragment Caddy de compatibilité existe déjà avec une autre configuration.')
-    if originals[FRAGMENT] not in (site(OLD_DOMAIN, Path('/etc/caddy/bdl-pool-tls')).encode(), site(API_DOMAIN, TLS).encode()):
+    current = site(API_DOMAIN, TLS)
+    before_miner = current.replace('    import /etc/caddy/bdlminer-routes/*.caddy\n', '')
+    if originals[FRAGMENT] not in (site(OLD_DOMAIN, Path('/etc/caddy/bdl-pool-tls')).encode(), current.encode(), before_miner.encode()):
         raise DomainError('Le fragment Caddy a été personnalisé. Configuration conservée.')
     backup = ROOT/('domain-before-'+str(time.time_ns()))
     backup.mkdir(mode=0o700)

@@ -90,6 +90,11 @@ class DelegationTests(unittest.TestCase):
 
 
 class ActivationTests(unittest.TestCase):
+    def test_api_template_preserves_native_miner_routes_and_leaves_legacy_host_alone(self):
+        marker = 'import /etc/caddy/bdlminer-routes/*.caddy'
+        self.assertIn(marker, domain.site(domain.API_DOMAIN, domain.TLS))
+        self.assertNotIn(marker, domain.site(domain.OLD_DOMAIN, Path('/etc/caddy/bdl-pool-tls')))
+
     def fixture(self, health):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
