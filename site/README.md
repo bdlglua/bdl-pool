@@ -52,11 +52,12 @@ Unknown or unavailable readings remain unknown; the public API is unchanged.
 `out/` with the GitHub Pages actions on pushes to `main`. Pull requests and the
 migration branch are built and tested without deploying.
 
-For the first deployment, GitHub Pages must use **GitHub Actions** as its source
-(repository Settings → Pages → Build and deployment). The workflow enables Pages
-and configures this source using its Pages write permission; repository policies
-may require the owner to select the source once. Keep the custom domain `bdl-pool.com` and
-HTTPS enabled. No DNS, API or Stratum change is needed.
+Select **GitHub Actions** as the Pages source in repository Settings → Pages →
+Build and deployment, so the previous branch-based builder cannot compete with
+the Next.js artifact deployment. This administrative setting must be changed by
+the repository owner; the workflow token cannot change it. The workflow uses
+its separate Pages deployment permission to publish `out/`. Keep the custom
+domain `bdl-pool.com` and HTTPS enabled. No DNS, API or Stratum change is needed.
 
 The previous root HTML files remain as a temporary fallback for the existing
 branch-based Pages publication until that first deployment succeeds. They are
