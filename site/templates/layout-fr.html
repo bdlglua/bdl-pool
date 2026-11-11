@@ -1,0 +1,30 @@
+{{icons}}
+<a class="skip-link" href="#main">Aller au contenu</a>
+<header class="site-header">
+<div class="header-inner wrap"><a class="brand" href="/" aria-label="BDL Pool, accueil"><img src="/assets/brand.svg" width="34" height="34" alt=""/><span>BDL<span class="brand-light">Pool</span></span></a>
+<nav id="main-nav" class="main-nav" aria-label="Navigation principale">{{navigation}}
+</nav>
+<div class="header-actions"><button id="theme-toggle" type="button" class="theme-toggle" title="Activer le thème clair" aria-label="Activer le thème clair" aria-pressed="true"><svg class="icon sun-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path></svg><svg class="icon moon-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.3A8.6 8.6 0 0 1 8.7 3.8 8.8 8.8 0 1 0 20.2 15.3Z"></path></svg></button><a class="language-switch" href="{{language_url}}" lang="en" hrefLang="en" aria-label="Switch to English">EN</a><a class="header-github" href="https://github.com/bdlglua/bdl-pool" target="_blank" rel="noopener noreferrer">GitHub <svg class="icon" aria-hidden="true"><use href="#i-external"></use></svg></a><button class="menu-toggle" type="button" aria-label="Ouvrir le menu" aria-controls="main-nav" aria-expanded="false"><span></span><span></span><span></span></button>
+</div>
+</div>
+</header>
+<div class="coin-bar wrap"><label for="pool-coin">Réseau de minage</label><select id="pool-coin"><option value="btc" selected="">Bitcoin (BTC)</option><option value="bch">Bitcoin Cash (BCH)</option></select><span id="coin-description">Minage solo · SHA-256</span>
+</div>
+
+<main id="main"{{main_attrs}}>
+{{content}}
+
+</main>
+
+<footer class="site-footer">
+<div class="footer-inner wrap">
+<nav class="footer-pages" aria-label="Toutes les pages">{{navigation}}
+</nav>
+<div class="footer-top"><a class="brand" href="/" aria-label="BDL Pool, accueil"><img src="/assets/brand.svg" width="34" height="34" alt=""/><span>BDL<span class="brand-light">Pool</span></span></a><p>Pool Bitcoin solo</p><a href="https://github.com/bdlglua/bdl-pool" target="_blank" rel="noopener noreferrer">GitHub <svg class="icon" aria-hidden="true"><use href="#i-external"></use></svg></a>
+</div>
+<div class="footer-bottom"><span>© BDL Pool</span><a href="https://github.com/bdlglua" target="_blank" rel="noopener noreferrer">bdlglua</a>
+</div>
+</div>
+</footer>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden="">
+</div><noscript><p class="noscript-message">Activez JavaScript pour les relevés et les réglages du mineur. <!-- -->Stratum V1 : stratum.bdl-pool.com:39991 · Stratum V2 : stratum.bdl-pool.com:36809.</p></noscript>

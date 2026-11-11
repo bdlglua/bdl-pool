@@ -1,15 +1,12 @@
-name: Next.js website
+name: Rust website
 
 on:
   push:
     branches: [main, "codex/nextjs-16-migration"]
     paths:
-      - "app/**"
-      - "components/**"
-      - "lib/**"
+      - "site/**"
       - "assets/**"
       - "tests/**"
-      - "tools/prepare-public.mjs"
       - "config.js"
       - "data/**"
       - "api/openapi.json"
@@ -17,7 +14,6 @@ on:
       - ".nojekyll"
       - "package*.json"
       - "*config.*"
-      - "next-env.d.ts"
       - ".github/workflows/web.yml"
   pull_request:
   workflow_dispatch:
@@ -32,16 +28,20 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    env:
-      NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.99.1
+        with:
+          components: rustfmt, clippy
       - uses: actions/setup-node@v7
         with:
           node-version: "24"
           cache: npm
       - run: npm ci
-      - run: npm run build
+      - run: cargo fmt --manifest-path site/Cargo.toml -- --check
+      - run: cargo clippy --locked --manifest-path site/Cargo.toml --all-targets -- -D warnings
+      - run: cargo test --locked --manifest-path site/Cargo.toml
+      - run: cargo run --locked --release --manifest-path site/Cargo.toml
       - run: npm run typecheck
       # Ubuntu runners already provide Chrome and its native dependencies.
       # Keep browser tests independent of transient Ubuntu mirror failures.
@@ -76,6 +76,6 @@ jobs:
       - uses: actions/configure-pages@v5
         with:
           enablement: true
-      - name: Publish static Next.js export
+      - name: Publish Rust-generated website
         id: deployment
         uses: actions/deploy-pages@v4

@@ -1,0 +1,25 @@
+<section class="miners-section wrap category-page" id="mineurs" aria-labelledby="miners-title">
+      <div class="section-heading"><h1 id="miners-title">Mineurs</h1><button type="button" id="refresh-miners" class="miners-refresh">Actualiser</button></div>
+      <form id="miner-search" class="miner-search" noValidate="">
+        <label for="miner-lookup-address">Statistiques</label>
+        <div class="miner-search-row"><input id="miner-lookup-address" placeholder="bc1…, 1… ou 3…" autoComplete="off" autoCapitalize="off" spellCheck="false" aria-describedby="miner-search-message"/><button type="submit" class="button primary">Rechercher</button></div>
+        <p id="miner-search-message" class="miners-message" role="status" aria-live="polite" hidden=""></p>
+      </form>
+      <div id="miner-statistics" class="miner-statistics" hidden="">
+        <div class="miner-detail-heading"><div><h3>Statistiques de l’appareil</h3><code id="selected-miner-address"></code></div><span id="miner-stats-updated" class="miners-updated"></span></div>
+        <div class="metrics-grid miner-summary">
+          <article class="metric"><div class="metric-label">Hashrate · 5 min</div><p class="metric-value" id="personal-hashrate">—</p></article>
+          <article class="metric"><div class="metric-label">Connexions</div><p class="metric-value" id="personal-connections">—</p></article>
+          <article class="metric"><div class="metric-label">Shares</div><p class="metric-value" id="personal-shares">—</p></article>
+          <article class="metric"><div class="metric-label">Meilleure difficulté</div><p class="metric-value" id="personal-best">—</p></article>
+        </div>
+        <div class="miners-table-wrap"><table class="miners-table"><thead><tr><th scope="col">Worker</th><th scope="col">Appareil</th><th scope="col">État</th><th scope="col">Hashrate · 5 min</th><th scope="col">Meilleure difficulté</th></tr></thead><tbody id="personal-workers"></tbody></table></div>
+        <div class="miners-pagination" id="personal-pagination" hidden=""><button type="button" id="personal-previous">Précédent</button><span id="personal-page"></span><button type="button" id="personal-next">Suivant</button></div>
+      </div>
+      <div class="online-miners">
+        <div class="miner-detail-heading"><h3>Mineurs en ligne</h3><span id="online-count" class="miners-updated">—</span></div>
+        <p id="online-message" class="miners-message" role="status">Chargement…</p>
+        <div class="miners-table-wrap" id="online-table-wrap" hidden=""><table class="miners-table"><thead><tr><th scope="col">Appareil</th><th scope="col">Adresse BTC</th><th scope="col">Worker</th><th scope="col">Hashrate · 5 min</th><th scope="col" title="Meilleure difficulté signalée par CKPool">Meilleure difficulté</th></tr></thead><tbody id="online-miners-body"></tbody></table></div>
+        <div class="online-footer"><span id="online-updated" class="miners-updated"></span><div class="miners-pagination" id="online-pagination" hidden=""><button type="button" id="online-previous">Précédent</button><span id="online-page"></span><button type="button" id="online-next">Suivant</button></div></div>
+      </div>
+    </section>

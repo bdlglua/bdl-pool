@@ -1,0 +1,59 @@
+<h1>BDL Pool API</h1><p class="api-intro">Pool, Bitcoin address and worker statistics.</p>
+<section class="api-base" aria-labelledby="api-base-title"><h2 id="api-base-title">Base URL</h2><div class="api-base-url"><code id="api-base-url">https://api.bdl-pool.com:36018/api/v1</code><button type="button" class="api-copy" data-copy="api-base-url">Copy</button></div><div class="api-actions"><button type="button" id="api-health-test" class="button primary">Test API</button><a href="/api/openapi.json">OpenAPI contract ↗</a></div><p id="api-message" role="status" aria-live="polite" hidden=""></p><pre id="api-health-result" hidden=""></pre></section>
+<section aria-labelledby="api-routes-title"><h2 id="api-routes-title">Endpoints</h2><table><thead><tr><th scope="col">URL</th><th scope="col">Response</th></tr></thead><tbody><tr><td><code>GET /online?limit=50&amp;offset=0</code></td><td>Active connections, shortened addresses and advertised devices.</td></tr><tr><td><code>GET /health</code></td><td>API process health</td></tr><tr><td><code>GET /pool</code></td><td>Global pool and Bitcoin node statistics</td></tr><tr><td><code>GET /history</code></td><td>Hashrate history</td></tr><tr><td><code>GET /stratum</code></td><td>Address, ports and V2 public key</td></tr><tr><td><code>GET /miners/{address}</code></td><td>Statistics for one Bitcoin address</td></tr><tr><td><code>GET /miners/{address}/workers?limit=50&amp;offset=0</code></td><td>Workers for one address</td></tr><tr><td><code>GET /miners/{address}/workers/{worker}</code></td><td>Statistics for one worker</td></tr><tr><td><code>GET /openapi.json</code></td><td>OpenAPI 3.1 specification</td></tr></tbody></table></section>
+<section aria-labelledby="api-examples-title"><h2 id="api-examples-title">Examples</h2><div class="api-code-heading"><h3>cURL</h3><button type="button" class="api-copy" data-copy="api-curl">Copy</button></div><pre><code id="api-curl">curl https://api.bdl-pool.com:36018/api/v1/pool
+curl &quot;https://api.bdl-pool.com:36018/api/v1/miners/YOUR_BITCOIN_ADDRESS/workers?limit=50&amp;offset=0&quot;</code></pre><div class="api-code-heading"><h3>JavaScript</h3><button type="button" class="api-copy" data-copy="api-javascript">Copy</button></div><pre><code id="api-javascript">const base = &quot;https://api.bdl-pool.com:36018/api/v1&quot;;
+const address = &quot;YOUR_BITCOIN_ADDRESS&quot;;
+const response = await fetch(`${base}/miners/${encodeURIComponent(address)}`);
+if (!response.ok) throw new Error(`HTTP ${response.status}`);
+const miner = await response.json();</code></pre>
+<div class="api-code-heading"><h3>TypeScript</h3><button type="button" class="api-copy" data-copy="api-typescript">Copy</button></div><pre><code id="api-typescript">type Health = { apiVersion: &quot;1&quot;; status: &quot;ok&quot; };
+
+const response = await fetch(&quot;https://api.bdl-pool.com:36018/api/v1/health&quot;);
+if (!response.ok) throw new Error(`HTTP ${response.status}`);
+const health: Health = await response.json();
+console.log(health.status);</code></pre><div class="api-code-heading"><h3>Rust (reqwest + serde)</h3><button type="button" class="api-copy" data-copy="api-rust">Copy</button></div><pre><code id="api-rust">use serde::Deserialize;
+
+#[derive(Deserialize)]
+struct Health {
+	#[serde(rename = &quot;apiVersion&quot;)]
+	api_version: String,
+	status: String,
+}
+
+fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
+	let response = reqwest::blocking::get(
+		&quot;https://api.bdl-pool.com:36018/api/v1/health&quot;,
+	)?.error_for_status()?;
+	let health: Health = response.json()?;
+	println!(&quot;{} ({})&quot;, health.status, health.api_version);
+	Ok(())
+}</code></pre><p>Required crates: <code>reqwest</code> (with the <code>blocking</code> and <code>json</code> features) and <code>serde</code> (with the <code>derive</code> feature).</p><div class="api-code-heading"><h3>Go</h3><button type="button" class="api-copy" data-copy="api-go">Copy</button></div><pre><code id="api-go">package main
+
+import (
+	&quot;encoding/json&quot;
+	&quot;fmt&quot;
+	&quot;net/http&quot;
+)
+
+func main() {
+	response, err := http.Get(&quot;https://api.bdl-pool.com:36018/api/v1/health&quot;)
+	if err != nil {
+		panic(err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		panic(response.Status)
+	}
+
+	var health struct {
+		APIVersion string `json:&quot;apiVersion&quot;`
+		Status     string `json:&quot;status&quot;`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&amp;health); err != nil {
+		panic(err)
+	}
+	fmt.Printf(&quot;%s (%s)\n&quot;, health.Status, health.APIVersion)
+}</code></pre><p><a href="https://github.com/bdlglua/bdl-pool/tree/main/api/examples">Runnable TypeScript, Rust, and Go clients</a> · <a href="https://github.com/bdlglua/bdl-pool/tree/main/api/tools">Monitoring, Discord bot, and Prometheus exporter</a></p></section>
+<section aria-labelledby="api-format-title"><h2 id="api-format-title">Data format</h2><dl class="api-facts"><dt>Presence</dt><dd>Connections are checked every 15 seconds. available=false means that their state is unconfirmed.</dd><dt>Device</dt><dd>Hardware model advertised in the Stratum user-agent, otherwise the software name. Missing models remain null.</dd><dt>Updates</dt><dd>Global statistics update every five minutes. Worker statistics follow CKPool.</dd><dt>Dates</dt><dd>updatedAt is the measurement time. stale marks an old reading.</dd><dt>Hashrate</dt><dd>All hashrateHps values are H/s. Unknown values remain null.</dd><dt>Addresses</dt><dd>Use a Bitcoin mainnet address without a worker suffix. CKPool creates its statistics after its first recorded share.</dd><dt>Workers</dt><dd>limit defaults to 50, up to 200. Use offset for pagination. Full worker names avoid ambiguity.</dd><dt>Availability</dt><dd>readyAtLastCheck refers to the last Stratum V1 check. It does not confirm a V2 connection.</dd><dt>Access</dt><dd>Read-only, without authentication. GET, HEAD and OPTIONS; public CORS. No directory of miner addresses is exposed.</dd></dl></section>
+<section aria-labelledby="api-errors-title"><h2 id="api-errors-title">HTTP codes</h2><dl class="api-facts api-errors"><dt><code>200</code></dt><dd>Data is available; check stale for older readings.</dd><dt><code>304</code></dt><dd>Unchanged response for this ETag.</dd><dt><code>400</code></dt><dd>Invalid address or parameters.</dd><dt><code>404</code></dt><dd>Endpoint, address or worker not found.</dd><dt><code>405</code></dt><dd>Write method not allowed.</dd><dt><code>503</code></dt><dd>Statistics source unavailable.</dd></dl></section>

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { pageNames, pages, route } from "../lib/pages";
+import { pageNames, pages, route } from "./routes";
 
 const address = "1BoatSLRHtKNngkdXEeobR76b53LETtpyT";
 const cashAddress = "bitcoincash:qpm2qsznhks23z7629mms6s4cwef74vcwvy22gdx6a";

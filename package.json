@@ -7,22 +7,16 @@
     "node": ">=20.9.0"
   },
   "scripts": {
-    "dev": "node tools/prepare-public.mjs && next dev",
-    "build": "node tools/prepare-public.mjs && next build",
+    "dev": "cargo run --manifest-path site/Cargo.toml && python3 -m http.server 3000 --directory out --bind 127.0.0.1",
+    "build": "cargo run --locked --release --manifest-path site/Cargo.toml",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
-    "preview": "python3 -m http.server 3000 --directory out --bind 127.0.0.1"
-  },
-  "dependencies": {
-    "next": "16.4.6",
-    "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "preview": "python3 -m http.server 3000 --directory out --bind 127.0.0.1",
+    "check:rust": "cargo test --locked --manifest-path site/Cargo.toml"
   },
   "devDependencies": {
     "@playwright/test": "1.65.0",
     "@types/node": "24.10.0",
-    "@types/react": "19.3.0",
-    "@types/react-dom": "19.2.3",
     "typescript": "5.9.3"
   }
 }
