@@ -1,0 +1,29 @@
+[package]
+name = "bdl-pool-services"
+version = "1.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+serde_json = "1"
+regex = "1"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+sha2 = "0.10"
+hmac = "0.12"
+bs58 = "0.5"
+libc = "0.2"
+url = "2"
+percent-encoding = "2"
+getrandom = { version = "0.2", features = ["std"] }
+ureq = { version = "2.12", features = ["json"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+lto = true
+strip = true
+
+[[bin]]
+name = "bdl-pool-services"
+path = "src/main.rs"

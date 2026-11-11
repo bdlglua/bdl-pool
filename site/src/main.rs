@@ -132,30 +132,42 @@ fn styles(root: &Path) -> io::Result<String> {
     .collect()
 }
 
-fn scripts(root: &Path, page: &Page) -> io::Result<String> {
-    let mut paths = vec![
-        "config.js",
-        "assets/coins.js",
-        "assets/theme.js",
-        "assets/site.js",
-        "assets/navigation.js",
-    ];
-    if page.key == "statistics" {
-        paths.extend(["assets/vendor/chart.umd.min.js", "assets/pulse-chart.js"]);
+fn scripts(root: &Path, _page: &Page) -> io::Result<String> {
+    let url = asset(root, "assets/wasm/boot.js")?;
+    Ok(format!("<script type=\"module\" src=\"{url}\"></script>\n"))
+}
+
+fn build_browser(root: &Path) -> io::Result<()> {
+    use std::process::Command;
+    let cargo = env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
+    let status = Command::new(cargo)
+        .args([
+            "build",
+            "--locked",
+            "--release",
+            "--target",
+            "wasm32-unknown-unknown",
+            "--manifest-path",
+        ])
+        .arg(root.join("site/browser/Cargo.toml"))
+        .status()?;
+    if !status.success() {
+        return Err(io::Error::other("browser Rust compilation failed"));
     }
-    if ["home", "statistics", "connect", "faq"].contains(&page.key) {
-        paths.push("assets/app.js");
+    let output = root.join("assets/wasm");
+    fs::create_dir_all(&output)?;
+    let status = Command::new("wasm-bindgen")
+        .args(["--target", "web", "--no-typescript", "--out-dir"])
+        .arg(&output)
+        .arg(root.join("site/browser/target/wasm32-unknown-unknown/release/bdl_pool_browser.wasm"))
+        .status()?;
+    if !status.success() {
+        return Err(io::Error::other("WebAssembly bindings failed"));
     }
-    if page.key == "miners" {
-        paths.push("assets/miners.js");
-    }
-    if page.key == "api" {
-        paths.push("assets/api.js");
-    }
-    paths
-        .iter()
-        .map(|path| asset(root, path).map(|url| format!("<script defer src=\"{url}\"></script>\n")))
-        .collect()
+    let module_hash = fingerprint(&fs::read(output.join("bdl_pool_browser.js"))?);
+    let wasm_hash = fingerprint(&fs::read(output.join("bdl_pool_browser_bg.wasm"))?);
+    fs::write(output.join("boot.js"), format!("// Generated WebAssembly loader. Application source: site/browser/src/*.rs\nimport init from './bdl_pool_browser.js?v={module_hash}';\nawait init({{module_or_path:new URL('./bdl_pool_browser_bg.wasm?v={wasm_hash}',import.meta.url)}});\n"))?;
+    Ok(())
 }
 
 fn render(root: &Path, page: &Page, lang: Language) -> io::Result<String> {
@@ -263,6 +275,7 @@ fn copy_tree(source: &Path, destination: &Path) -> io::Result<()> {
 
 fn build() -> io::Result<()> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+    build_browser(root)?;
     let output = root.join("out");
     let mut documents = Vec::new();
     for lang in [Language::Fr, Language::En] {
@@ -281,7 +294,7 @@ fn build() -> io::Result<()> {
     fs::create_dir_all(output.join("api"))?;
     copy_tree(&root.join("assets"), &output.join("assets"))?;
     copy_tree(&root.join("data"), &output.join("data"))?;
-    for file in ["config.js", "CNAME", ".nojekyll", "api/openapi.json"] {
+    for file in ["config.json", "CNAME", ".nojekyll", "api/openapi.json"] {
         fs::copy(root.join(file), output.join(file))?;
     }
     for (file, document) in &documents {
@@ -333,10 +346,8 @@ mod tests {
                 assert!(html.contains("<noscript>"));
                 assert!(!html.contains("_next/"));
                 assert!(!html.contains("self.__next_f"));
-                assert_eq!(
-                    html.contains("vendor/chart.umd.min.js"),
-                    page.key == "statistics"
-                );
+                assert!(html.contains("assets/wasm/boot.js"));
+                assert!(!html.contains("chart.umd.min.js"));
             }
         }
         assert_eq!(routes.len(), 12);

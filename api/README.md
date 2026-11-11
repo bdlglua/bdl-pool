@@ -1,3 +1,9 @@
+> Runtime Rust : `services/src/{api,http,presence,collect,install}.rs`.
+> `./api/install.sh` compile le binaire natif et installe les unités Rust.
+> Les anciens modules Python restent une référence de compatibilité et de retour
+> arrière jusqu’à la bascule effective du serveur. La publication du site WASM
+> ne redémarre pas les services du pool.
+
 # API BDL Pool
 
 Bitcoin Cash utilise des routes distinctes sous `/api/v1/coins/bch` :

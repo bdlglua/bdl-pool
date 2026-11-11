@@ -1,52 +1,42 @@
-# BDL Pool website in Rust
+# BDL Pool in Rust
 
-`site/src/main.rs` renders twelve French/English pages from shared HTML templates
-and exports public assets to `out/`. The generator uses the Rust standard library
-only. There is no React, Next.js, hydration bundle or Node server in the website.
-GitHub Pages continues to serve `bdl-pool.com` with the same URLs and HTTPS.
+The typed native generator in site/src/ owns twelve French/English pages,
+metadata, navigation and the public export. The browser application in
+site/browser/src/ compiles to WebAssembly: network selection, CashAddr checksum
+validation, Stratum V1/V2 settings, monitoring caches, miner lookup, pagination,
+themes, menus and Canvas charts are Rust. No React, Next.js or handwritten
+JavaScript is loaded. HTML/CSS remain the document/presentation formats;
+wasm-bindgen generates the JavaScript required to call browser APIs.
+
+Public settings live in config.json and are compiled into the WASM application.
+Changing them requires a build. The build fingerprints the generated loader,
+JavaScript bindings, WASM and styles for cache invalidation. Browser assets are
+built locally; production serves the same routes on GitHub Pages.
 
 ```sh
-cargo test --locked --manifest-path site/Cargo.toml
+rustup target add wasm32-unknown-unknown
+cargo install wasm-bindgen-cli --version 0.2.105 --locked
 cargo run --locked --release --manifest-path site/Cargo.toml
 python3 -m http.server 3000 --directory out --bind 127.0.0.1
 ```
 
-Edit `site/templates/pages/` for translated content, `layout-fr.html` and
-`layout-en.html` for shared chrome, and `document.html` for the document frame.
-The typed Rust catalog owns routes, navigation, titles, descriptions,
-canonical/alternate URLs, robots and sitemap. Text metadata is HTML-escaped;
-unknown bindings fail the build. CSS/JS cache keys follow file contents.
-
-## Browser features
-
-Existing browser scripts in `assets/` retain monitoring, BTC/BCH selection,
-CashAddr validation, Stratum V1/V2 settings, miner lookup, charts, menu navigation
-and language links. `assets/theme.js` replaces the React theme component and
-preserves its storage key, labels, theme-color values and theme-change event.
-
-Scripts are ordinary deferred scripts in dependency order: configuration before
-network selection, Chart.js before its adapter, adapters before consumers.
-Body context is rendered directly by Rust; tools do not wait for hydration.
-Translated content remains readable without JavaScript.
-
-The Python API, Bitcoin/CKPool services, BCH relay and monitoring are independent
-services and are unchanged. Only `assets/`, `config.js`, `data/`, CNAME,
-`.nojekyll` and `api/openapi.json` are copied to the public export. Server and
-monitoring source code is excluded.
-
-## Validate and publish
+Python's static preview server is a development convenience. It is not part of
+production. Node/TypeScript are used for independent browser tests only.
 
 ```sh
-cargo fmt --manifest-path site/Cargo.toml -- --check
-cargo clippy --locked --manifest-path site/Cargo.toml --all-targets -- -D warnings
+cargo fmt --manifest-path site/browser/Cargo.toml -- --check
+cargo clippy --locked --manifest-path site/browser/Cargo.toml --target wasm32-unknown-unknown -- -D warnings
+cargo test --locked --manifest-path site/browser/Cargo.toml
 cargo test --locked --manifest-path site/Cargo.toml
-cargo run --locked --release --manifest-path site/Cargo.toml
 npm ci
 npm run typecheck
 npm run test:e2e
 ```
 
-Node/TypeScript are retained for Playwright tests. `npm run build` is a convenience
-alias for Rust. The `Rust website` workflow checks Rust, builds the export, runs
-browser tests, then publishes `out/` from `main`. Legacy branch-publication HTML
-and Next.js sources are retired. No DNS, Stratum, API or access setting changes.
+Native API, filtered connection collection and public snapshot collection are
+in services/. api/install.sh compiles and installs the Rust services using the
+existing public configuration, certificates and ports. Changing source does
+not restart the pool server: run that installer on the server to activate it.
+Bitcoin Core, CKPool, mining firmware and the OpenPort transport are separate
+programs. Historical operational migration tools and test fixtures are not
+part of the Rust application runtime.

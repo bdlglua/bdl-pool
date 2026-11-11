@@ -7,7 +7,7 @@ on:
       - "site/**"
       - "assets/**"
       - "tests/**"
-      - "config.js"
+      - "config.json"
       - "data/**"
       - "api/openapi.json"
       - "CNAME"
@@ -33,15 +33,26 @@ jobs:
       - uses: dtolnay/rust-toolchain@1.99.1
         with:
           components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
       - uses: actions/setup-node@v7
         with:
           node-version: "24"
           cache: npm
       - run: npm ci
+      - uses: actions/cache@v6
+        id: wasm-bindgen
+        with:
+          path: ~/.cargo/bin/wasm-bindgen
+          key: ${{ runner.os }}-wasm-bindgen-0.2.105-rust-1.99.1
+      - if: steps.wasm-bindgen.outputs.cache-hit != 'true'
+        run: cargo install wasm-bindgen-cli --version 0.2.105 --locked
+      - run: cargo fmt --manifest-path site/browser/Cargo.toml -- --check
+      - run: cargo clippy --locked --manifest-path site/browser/Cargo.toml --target wasm32-unknown-unknown -- -D warnings
+      - run: cargo test --locked --manifest-path site/browser/Cargo.toml
       - run: cargo fmt --manifest-path site/Cargo.toml -- --check
       - run: cargo clippy --locked --manifest-path site/Cargo.toml --all-targets -- -D warnings
-      - run: cargo test --locked --manifest-path site/Cargo.toml
       - run: cargo run --locked --release --manifest-path site/Cargo.toml
+      - run: cargo test --locked --manifest-path site/Cargo.toml
       - run: npm run typecheck
       # Ubuntu runners already provide Chrome and its native dependencies.
       # Keep browser tests independent of transient Ubuntu mirror failures.

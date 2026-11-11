@@ -198,7 +198,7 @@ test("mobile menu, keyboard dismissal and layout remain usable", async ({
   await expect(page.locator("#endpoint-port")).toHaveText("39991");
 });
 
-test("statistics loads Chart.js after its dependencies and refreshes once per click", async ({
+test("statistics renders its Rust chart and refreshes once per click", async ({
   page,
 }) => {
   let reads = 0;

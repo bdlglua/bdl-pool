@@ -1,7 +1,7 @@
 # Stratum V2 — activation du serveur
 
 L'interface propose V1 et V2. V1 garde sa configuration actuelle sur TCP 3333.
-V2 reste désactivé dans `config.js` tant que le serveur n'est pas configuré et
+V2 reste désactivé dans `config.json` tant que le serveur n'est pas configuré et
 que sa clé publique d'autorité n'est pas renseignée.
 
 ## Vérifier le CKPool installé
@@ -106,10 +106,10 @@ CKPool exige une clé publique d'autorité Noise dans l'URL du mineur. Les fichi
 privés d'autorité et de clé statique doivent rester sur le serveur, dans un dossier
 persistant protégé. Les clés ne doivent pas être placées dans `/run` ou `/tmp`,
 sinon une rotation après redémarrage invaliderait les réglages des mineurs.
-Ne jamais placer ces fichiers privés dans le dépôt ou dans config.js.
+Ne jamais placer ces fichiers privés dans le dépôt ou dans config.json.
 
 Une fois le serveur configuré et sa clé publique obtenue, renseigner uniquement
-les paramètres publics dans `config.js` : `sv2.enabled`, `sv2.stratumPort`,
+les paramètres publics dans `config.json` : `sv2.enabled`, `sv2.stratumPort`,
 `sv2.publicPort` et `sv2.authorityPublicKey`. Le navigateur produit alors :
 
 ```text

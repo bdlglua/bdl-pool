@@ -104,7 +104,7 @@ Pour retirer aussi l'accès GitHub, supprimer la deploy key dans Settings → De
 ## Diagnostic local sans publication
 
 ```bash
-python3 /home/bdl/bdl-pool-site/monitoring/collect.py
+/home/bdl/bdl-pool-site/services/target/release/bdl-pool-services collect
 ```
 
 Cette commande imprime uniquement le relevé public filtré. Si le dossier des

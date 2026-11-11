@@ -30,13 +30,13 @@ cleanup() {
   if "$pending"; then git -C "$stats_repo" checkout -q HEAD -- status.json || true; fi
 }
 trap cleanup EXIT
-python3 "$script_dir/collect.py" --previous "$stats_repo/status.json" > "$scratch"
+"$script_dir/../services/target/release/bdl-pool-services" collect --previous "$stats_repo/status.json" > "$scratch"
 pending=true
 cp "$scratch" "$stats_repo/status.json"
 # Never git add a directory, configuration, log, wallet, or authentication file.
 git -C "$stats_repo" add -- status.json
 if [[ -f "$HOME/.config/bdl-pool-bch/monitor.json" ]]; then
-  python3 "$script_dir/collect.py" --profile "$HOME/.config/bdl-pool-bch/monitor.json" --previous "$stats_repo/status-bch.json" > "$scratch"
+  "$script_dir/../services/target/release/bdl-pool-services" collect --profile "$HOME/.config/bdl-pool-bch/monitor.json" --previous "$stats_repo/status-bch.json" > "$scratch"
   cp "$scratch" "$stats_repo/status-bch.json"
   git -C "$stats_repo" add -- status-bch.json
 fi

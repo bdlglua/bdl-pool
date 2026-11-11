@@ -8,3 +8,6 @@ description = "Rust static website generator for BDL Pool"
 
 [profile.release]
 opt-level = 2
+
+[workspace]
+exclude = ["browser"]

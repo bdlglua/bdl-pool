@@ -1,0 +1,23 @@
+{
+  "publicPort": 39991,
+  "publicHost": "stratum.bdl-pool.com",
+  "sv2": {
+    "enabled": true,
+    "publicPort": 36809,
+    "authorityPublicKey": "9c9DhUCzDsSZaCgKJitKKcngq24FLrqfJ9kUQzhxLiiSvAGuhna"
+  },
+  "statusUrl": "https://raw.githubusercontent.com/bdlglua/bdl-pool/stats/status.json",
+  "apiBaseUrl": "https://api.bdl-pool.com:36018/api/v1",
+  "coins": {
+    "bch": {
+      "publicHost": "",
+      "publicPort": null,
+      "sv2": {
+        "enabled": false
+      },
+      "statusUrl": "https://raw.githubusercontent.com/bdlglua/bdl-pool/stats/status-bch.json",
+      "apiBaseUrl": "https://api.bdl-pool.com:36018/api/v1/coins/bch"
+    }
+  },
+  "pollIntervalMs": 60000
+}

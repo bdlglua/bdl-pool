@@ -10,3 +10,6 @@ test-results/
 .env*
 api/tools/discord-bot/dist/
 target/
+
+# Generated Rust/WebAssembly bindings
+/assets/wasm/
