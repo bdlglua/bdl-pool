@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
   "source": "snapshot",
-  "updatedAt": "2026-11-11T05:06:53Z",
+  "updatedAt": "2026-11-11T05:11:44Z",
   "node": {
     "chain": "main",
-    "blocks": 654050,
+    "blocks": 654428,
     "headers": 975390,
-    "verificationProgress": 0.3929057732013017,
+    "verificationProgress": 0.3934468580570503,
     "initialBlockDownload": true,
-    "updatedAt": "2026-11-11T05:00:51Z"
+    "updatedAt": "2026-11-11T05:11:44Z"
   },
   "pool": {
     "ready": false,
@@ -19,7 +19,7 @@
   },
   "history": [],
   "checks": {
-    "bitcoin": "stale",
+    "bitcoin": "ok",
     "poolStats": "missing",
     "stratum": "not_checked"
   }
