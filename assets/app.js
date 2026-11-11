@@ -12,7 +12,7 @@
   const bch = window.BDL_POOL_ACTIVE?.coin === "bch";
   const t = (text) => {
     const translated = english ? (translations[text] || text) : text;
-    return bch ? translated.replace(/Bitcoin(?! Cash)/g, "Bitcoin Cash").replace(/\bBTC\b/g, "BCH") : translated;
+    return bch ? translated.replace(/Bitcoin Core/g, "BCHN").replace(/Bitcoin(?! Cash)/g, "Bitcoin Cash").replace(/\bBTC\b/g, "BCH") : translated;
   };
   const locale = english ? "en-GB" : "fr-FR";
   const config = window.BDL_POOL_ACTIVE?.config || window.BDL_POOL_CONFIG || {};

@@ -324,9 +324,14 @@ class PoolAPI:
             if not isinstance(row, dict):
                 continue
             name = row.get('workername')
+            if self.coin == 'btc':
+                if (isinstance(name, str) and WORKER.fullmatch(name)
+                        and (name == address or name.startswith((address + '.', address + '_')))):
+                    workers.append(dict(name=name, **measurements(row)))
+                continue
             identity = worker_identity(name, self.coin)
             if identity and identity[0] == address:
-                canonical_name = name if self.coin == 'btc' else address + ('.'+identity[1] if identity[1] else '')
+                canonical_name = address + ('.'+identity[1] if identity[1] else '')
                 workers.append(dict(name=canonical_name, **measurements(row)))
         workers.sort(key=lambda worker: worker['name'])
         presence, clients = self.presence()
