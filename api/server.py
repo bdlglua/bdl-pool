@@ -505,6 +505,10 @@ class Handler(BaseHTTPRequestHandler):
     def send_error(self, code, message=None, explain=None):
         """Malformed requests and unknown methods get the JSON error shape,
         never the standard library's HTML page that echoes request details."""
+        # Parsing can fail before a version is recognised. The inherited
+        # HTTP/0.9 default would otherwise suppress the status and all headers.
+        if self.request_version == 'HTTP/0.9':
+            self.request_version = 'HTTP/1.0'
         head = getattr(self, 'command', None) == 'HEAD'
         if code == 501:
             self.respond(405, dict(error=dict(code='method_not_allowed', message='This API is read-only.')), head)
