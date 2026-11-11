@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "coin": "btc",
   "source": "snapshot",
-  "updatedAt": "2026-11-11T15:05:45Z",
+  "updatedAt": "2026-11-11T15:10:45Z",
   "node": {
     "chain": "main",
     "blocks": 670788,
