@@ -7,6 +7,9 @@ export function Icons() {
         xmlns={"http://www.w3.org/2000/svg"}
       >
         <defs>
+          <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 4v16h16M8 15l4-5 4 2 4-6" /></symbol>
+          <symbol id="i-miners" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="2" /><rect x="3" y="14" width="18" height="6" rx="2" /><path d="M7 7h.01M7 17h.01M11 7h6M11 17h6" /></symbol>
+          <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 6-6 6 6 6M16 6l6 6-6 6M14 4l-4 16" /></symbol>
           {"\n    "}
           <symbol id={"i-arrow"} viewBox={"0 0 24 24"}>
             <path d={"M5 12h14m-6-6 6 6-6 6"} />

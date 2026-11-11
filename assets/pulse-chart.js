@@ -20,7 +20,7 @@
     if (points.filter(p => p.value !== null).length < 2) { destroy(canvas); return false; }
     canvas.hidden = false;
     const palette = getComputedStyle(document.documentElement);
-    const color = palette.getPropertyValue('--chart-color').trim() || '#00ff88';
+    const color = palette.getPropertyValue('--chart-color').trim() || '#f7931a';
     const muted = palette.getPropertyValue('--label').trim() || '#94a3b8';
     const grid = palette.getPropertyValue('--chart-grid').trim() || 'rgba(255,255,255,.05)';
     const background = palette.getPropertyValue('--bg').trim() || '#070913';
@@ -39,17 +39,10 @@
       values.push({x: point.t, y: point.value});
     }
     const dataset = {
-      label: settings.label || 'Hashrate', data: values, borderColor: color, borderWidth: 3,
-      backgroundColor: context => {
-        const area = context.chart.chartArea;
-        if (!area) return 'transparent';
-        const gradient = context.chart.ctx.createLinearGradient(0, area.top, 0, area.bottom);
-        gradient.addColorStop(0, `rgba(${rgb},.4)`);
-        gradient.addColorStop(1, `rgba(${rgb},0)`);
-        return gradient;
-      },
-      fill: true, tension: .4, cubicInterpolationMode: 'monotone', spanGaps: false,
-      pointRadius: points.length > 40 ? 0 : 3, pointHoverRadius: 6,
+      label: settings.label || 'Hashrate', data: values, borderColor: color, borderWidth: 2,
+      backgroundColor: `rgba(${rgb},.06)`,
+      fill: true, tension: 0, cubicInterpolationMode: 'monotone', spanGaps: false,
+      pointRadius: points.length > 40 ? 0 : 3, pointHoverRadius: 4,
       pointBackgroundColor: background, pointBorderColor: color, pointBorderWidth: 2,
     };
     const options = {
@@ -59,8 +52,8 @@
       plugins: {
         legend: {display: false},
         tooltip: {
-          backgroundColor: 'rgba(19,23,42,.96)', titleColor: '#a4b0c5', bodyColor: '#fff',
-          borderColor: `rgba(${rgb},.35)`, borderWidth: 1, padding: 12, displayColors: false,
+          backgroundColor: background, titleColor: muted, bodyColor: palette.getPropertyValue('--fg').trim(),
+          borderColor: palette.getPropertyValue('--border-strong').trim(), borderWidth: 1, padding: 12, displayColors: false,
           callbacks: {
             title: items => items.length ? formatTime(items[0].parsed.x) : '',
             label: item => rate(item.parsed.y, locale),
@@ -69,11 +62,11 @@
       },
       scales: {
         y: {beginAtZero: true, border: {display: false}, grid: {color: grid}, ticks: {
-          color: muted, maxTicksLimit: 5,
+          color: muted, font: {family: 'IBM Plex Mono', size: 11}, maxTicksLimit: 5,
           callback: value => new Intl.NumberFormat(locale, {maximumFractionDigits: 2}).format(Number(value) / 1000 ** axisUnit) + ' ' + units[axisUnit],
         }},
         x: {type: 'linear', min: points[0].t, max: points.at(-1).t, border: {display: false}, grid: {display: false}, ticks: {
-          color: muted, maxTicksLimit: canvas.clientWidth < 500 ? 3 : 6, maxRotation: 0,
+          color: muted, font: {family: 'IBM Plex Mono', size: 11}, maxTicksLimit: canvas.clientWidth < 500 ? 3 : 6, maxRotation: 0,
           callback: value => formatTime(value),
         }},
       },

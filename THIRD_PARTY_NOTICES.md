@@ -22,7 +22,19 @@ The pool's logo and favicon reuse the user's BDLMiner icon from
 https://bdlglua.github.io/assets/icon.svg. The blue action color and neutral dark
 background palette follow https://bdlglua.github.io/ at the user's request.
 
-## DM Sans
+## IBM Plex and visual design method
+
+The instrument theme uses locally served IBM Plex Sans (400, 500, 600) and
+IBM Plex Mono (400, 500), under the SIL Open Font License 1.1. Original notices
+are preserved in `assets/fonts/OFL-IBM-Plex-sans.txt` and
+`assets/fonts/OFL-IBM-Plex-mono.txt`. Sources:
+https://github.com/google/fonts/tree/main/ofl/ibmplexsans and
+https://github.com/google/fonts/tree/main/ofl/ibmplexmono.
+
+Design method: unslop by Damir Sokolovsky ([@heydamir](https://x.com/heydamir)),
+CC BY 4.0, https://heydamir.design/unslop.
+
+## DM Sans (previous styles)
 
 DM Sans is distributed under the SIL Open Font License, Version 1.1.
 The font is served locally. Its license and original copyright notices are

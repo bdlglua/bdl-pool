@@ -4,8 +4,8 @@ import "@/assets/style.css";
 import "@/assets/miners.css";
 import "@/assets/api.css";
 import "@/assets/pool-theme.css";
-import "@/assets/pulse-theme.css";
 import "@/assets/pages.css";
+import "@/assets/pulse-theme.css";
 
 // This small synchronous script applies the saved theme before first paint.
 // The React theme button takes over after hydration.
@@ -22,7 +22,7 @@ export function Document({
     <html lang={lang} suppressHydrationWarning>
       <head>
         <meta name="color-scheme" content="light dark" />
-        <meta name="theme-color" content="#080f16" />
+        <meta name="theme-color" content="#141415" />
         <script dangerouslySetInnerHTML={{ __html: initialTheme }} />
       </head>
       <body>{children}</body>

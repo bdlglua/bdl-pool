@@ -63,7 +63,7 @@
     if (input) input.placeholder = 'bitcoincash:q…';
   }
   const description = document.querySelector('.hero-description');
-  if (description) description.textContent = en ? 'Bitcoin Cash solo mining · Stratum V1.' : 'Minage Bitcoin Cash en solo · Stratum V1.';
+  if (description) description.textContent = en ? 'Bitcoin Cash solo mining · Stratum V1' : 'Minage Bitcoin Cash en solo · Stratum V1';
   document.querySelectorAll('a[href*="protocol=v2"]').forEach(link => { link.hidden = true; });
   document.querySelectorAll('[data-protocol="v2"]').forEach(button => { button.disabled = true; button.hidden = true; });
   const faq = document.getElementById('faq-connection');
