@@ -2,6 +2,11 @@
 body { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
 body > main { flex: 1; }
 .site-header, .site-footer { flex-shrink: 0; }
+.coin-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding-top: 24px; font-size: 13px; }
+.coin-bar select { max-width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 12px; color: var(--text); background: var(--panel, #13232d); font: inherit; }
+.coin-bar span { color: var(--label); }
+body[data-coin="bch"] .node-heading-icon img { filter: hue-rotate(95deg); }
+@media (max-width: 520px) { .coin-bar span { flex-basis: 100%; } }
 .category-page { padding-block: 52px 36px; border-top: 0; }
 .section-heading h1, .faq-intro h1, .api-docs > h1 { margin: 0; font-size: clamp(30px, 4vw, 42px); line-height: 1.15; letter-spacing: -.035em; }
 .home-status { margin-top: 24px; }

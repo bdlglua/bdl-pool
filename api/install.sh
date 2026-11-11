@@ -57,6 +57,9 @@ settings = dict(snapshot=str(home/'.local/state/bdl-pool-monitor/repository/stat
                 onlineSnapshot='/var/lib/bdl-pool-presence/online.json',
                 ckpoolSocket='/run/ckpool/stratifier',
                 host=host, v1Port=3333, v2Port=3336)
+bch_settings = home/'.config/bdl-pool-bch/api.json'
+if bch_settings.exists():
+    settings['coins'] = {'bch': json.loads(bch_settings.read_text())}
 tls_line = ''
 api_host = host
 relay_file = Path('/etc/bdl-pool-openport/public.json')
@@ -118,6 +121,7 @@ BindReadOnlyPaths=/home/bdl/.config/bdl-pool-api
 BindReadOnlyPaths=/home/bdl/.local/state/bdl-pool-monitor/repository
 BindReadOnlyPaths=-/home/bdl/.local/state/bdl-pool-monitor/sv2-public.json
 BindReadOnlyPaths="'''+str(logs)+'''"
+BindReadOnlyPaths=-/home/bdl/mining/bch/logs
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
 MemoryMax=192M
 TasksMax=48

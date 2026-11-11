@@ -9,5 +9,15 @@ window.BDL_POOL_CONFIG = Object.freeze({
   }),
   statusUrl: "https://raw.githubusercontent.com/bdlglua/bdl-pool/stats/status.json", // Relevés publics filtrés.
   apiBaseUrl: "https://api.bdl-pool.com:36018/api/v1",
+  coins: Object.freeze({
+    bch: Object.freeze({
+      // The API supplies the real public BCH endpoint after server installation.
+      publicHost: "",
+      publicPort: null,
+      sv2: Object.freeze({ enabled: false }),
+      statusUrl: "https://raw.githubusercontent.com/bdlglua/bdl-pool/stats/status-bch.json",
+      apiBaseUrl: "https://api.bdl-pool.com:36018/api/v1/coins/bch"
+    })
+  }),
   pollIntervalMs: 60000
 });

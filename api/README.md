@@ -1,5 +1,13 @@
 # API BDL Pool
 
+Bitcoin Cash utilise des routes distinctes sous `/api/v1/coins/bch` :
+`/health`, `/pool`, `/history`, `/stratum`, `/online` et `/miners/{CashAddr}`
+(ainsi que les workers). `/api/v1/coins` indique les réseaux configurés.
+Les routes historiques restent dédiées à BTC. Sans configuration BCH, les routes
+BCH renvoient 503 et ne lisent jamais les données BTC. L’installation du vrai
+nœud/pool, les ports et les contrôles avant ouverture sont décrits dans
+[bch/README.md](../bch/README.md).
+
 API publique en lecture seule, hébergée sur le serveur du pool. L’interface et la
 documentation restent sur GitHub Pages. Aucun worker, share ou réglage n’est créé
 par une requête API.

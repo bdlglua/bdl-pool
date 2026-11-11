@@ -2,6 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import { pageNames, pages, route } from "../lib/pages";
 
 const address = "1BoatSLRHtKNngkdXEeobR76b53LETtpyT";
+const cashAddress = "bitcoincash:qpm2qsznhks23z7629mms6s4cwef74vcwvy22gdx6a";
 
 async function mockSources(page: Page) {
   await page.route(
@@ -273,4 +274,92 @@ test("English content is readable without JavaScript", async ({ browser }) => {
   await expect(page.locator("h1")).toContainText("BDL Pool");
   await expect(page.locator("noscript .noscript-message")).toContainText("Enable JavaScript");
   await context.close();
+});
+
+async function mockBCH(page: Page) {
+  await page.route("https://api.bdl-pool.com:36018/api/v1/coins/bch/**", request => {
+    const path = new URL(request.request().url()).pathname;
+    const updatedAt = new Date().toISOString();
+    const common = {apiVersion: "1", coin: "bch"};
+    if (path.endsWith("/stratum")) return request.fulfill({json: {...common, v1: {host: "bch.example.com", port: 39992}, v2: {configured: false}}});
+    if (path.endsWith("/online")) return request.fulfill({json: {...common, available: true, stale: false, updatedAt, total: 0, miners: []}});
+    if (path.endsWith("/workers")) return request.fulfill({json: {...common, address: cashAddress, workers: [], total: 0, offset: 0}});
+    return request.fulfill({json: {...common, address: cashAddress, updatedAt, shares: 987, hashrateHps: {"5m": 2000000}}});
+  });
+  await page.route("https://raw.githubusercontent.com/bdlglua/bdl-pool/stats/status-bch.json*", request => request.fulfill({json: {
+    schemaVersion: 1, coin: "bch", source: "snapshot", updatedAt: new Date().toISOString(),
+    node: {chain: "main", blocks: 900123, headers: 900123, verificationProgress: 1, initialBlockDownload: false},
+    pool: {ready: true, hashrateHps: 2000000, workers: 1}, checks: {bitcoin: "ok", stratum: "job_received"}, history: []
+  }}));
+}
+
+for (const lang of ["fr", "en"] as const) {
+  test(`${lang}: BCH settings validate CashAddr and preserve the network across pages`, async ({page}) => {
+    await mockBCH(page);
+    await page.goto(route("connect", lang)+"?coin=bch&protocol=v2");
+    await expect(page.locator("#pool-coin")).toHaveValue("bch");
+    await expect(page.locator("#endpoint-host")).toHaveText("bch.example.com");
+    await expect(page.locator("#endpoint-port")).toHaveText("39992");
+    await expect(page.locator('[data-protocol="v2"]')).toBeHidden();
+    await expect(page.locator('.language-switch')).toHaveAttribute("href", /coin=bch/);
+    await expect(page.locator('#node-blocks')).toHaveCount(0);
+    await page.locator("#btc-address").fill(address);
+    await page.locator('#miner-form button[type="submit"]').click();
+    await expect(page.locator("#form-error")).toContainText("CashAddr");
+    await page.locator("#btc-address").fill(cashAddress.slice(0,-1)+"q");
+    await page.locator('#miner-form button[type="submit"]').click();
+    await expect(page.locator("#miner-result")).toBeHidden();
+    await page.locator("#btc-address").fill(cashAddress.toUpperCase());
+    await page.locator("#worker-name").fill("bitaxe-bch");
+    await page.locator('#miner-form button[type="submit"]').click();
+    await expect(page.locator("#result-user")).toHaveText(cashAddress+".bitaxe-bch");
+    await expect(page.locator("#result-url")).toHaveText("stratum+tcp://bch.example.com:39992");
+    await expect(page.locator("#result-key-row")).toBeHidden();
+    const statsLink = page.locator(`#main-nav a[href*="${route("statistics",lang)}"]`);
+    await statsLink.focus();
+    await statsLink.click();
+    await expect(page).toHaveURL(/coin=bch/);
+    await expect(page.locator("#node-blocks")).toContainText(/900.123/);
+    await expect(page.locator("#metric-hashrate")).toContainText("MH/s");
+    await page.locator("#pool-coin").selectOption("btc");
+    await expect(page.locator("#pool-coin")).toHaveValue("btc");
+    await expect(page.locator("#metric-hashrate")).toContainText("TH/s");
+  });
+}
+
+test("BCH miner lookup uses only BCH endpoints and canonical CashAddr", async ({page}) => {
+  await mockBCH(page);
+  const requests: string[] = [];
+  page.on("request", request => { if (request.url().includes("/api/v1/")) requests.push(request.url()); });
+  await page.goto("/mineurs/?coin=bch");
+  await page.locator("#miner-lookup-address").fill(cashAddress.split(":")[1]);
+  await page.locator("#miner-search button").click();
+  await expect(page.locator("#personal-shares")).toHaveText("987");
+  expect(requests.every(url => url.includes("/api/v1/coins/bch/"))).toBe(true);
+});
+
+test("the mobile selector opens BCH and its API documentation uses the BCH base URL", async ({page}) => {
+  await mockBCH(page);
+  await page.setViewportSize({width: 390, height: 844});
+  await page.goto("/");
+  await page.locator("#pool-coin").selectOption("bch");
+  await expect(page).toHaveURL(/coin=bch/);
+  await expect(page.locator("h1")).toContainText("Bitcoin Cash");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.goto("/api/?coin=bch");
+  await expect(page.locator("#api-base-url")).toHaveText("https://api.bdl-pool.com:36018/api/v1/coins/bch");
+});
+
+test("an unconfigured BCH server never displays BTC endpoints or cached BTC readings", async ({page}) => {
+  await page.goto("/statistiques/");
+  await expect(page.locator("#metric-hashrate")).toContainText("TH/s");
+  await page.route("**/stats/status-bch.json*", request => request.abort());
+  await page.route("**/api/v1/coins/bch/**", request => request.fulfill({status: 503, json: {error: {code: "coin_not_configured"}}}));
+  await page.goto("/statistiques/?coin=bch");
+  await expect(page.locator("#metric-hashrate")).toHaveText("—");
+  await expect(page.locator("#node-blocks")).toHaveText("—");
+  await page.goto("/connexion/?coin=bch");
+  await expect(page.locator("#endpoint-host")).toHaveText("Non configuré");
+  await expect(page.locator("#endpoint-port")).toHaveText("—");
+  await expect(page.locator('#miner-form button[type="submit"]')).toBeDisabled();
 });

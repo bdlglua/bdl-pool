@@ -27,7 +27,7 @@ export default function Page() {
               {"Puis-je me connecter depuis Internet ?"}
               <span>{"+"}</span>
             </summary>
-            <p>
+            <p id="faq-connection">
               {
                 "Oui. Utilisez stratum.bdl-pool.com : port 39991 pour Stratum V1 ou port 36809 pour Stratum V2 avec la clé publique : 9c9DhUCzDsSZaCgKJitKKcngq24FLrqfJ9kUQzhxLiiSvAGuhna."
               }

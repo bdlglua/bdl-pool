@@ -24,6 +24,7 @@
       if (!response.ok) throw new Error('HTTP '+response.status);
       const data = await response.json();
       if (data.apiVersion !== '1' || data.status !== 'ok') throw new Error('invalid');
+      if (window.BDL_POOL_ACTIVE?.coin === 'bch' && data.coin !== 'bch') throw new Error('Wrong network');
       result.textContent = JSON.stringify(data, null, 2);
       result.hidden = false;
       show(text('L’API répond (HTTP 200).', 'The API responds (HTTP 200).'));

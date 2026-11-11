@@ -31,7 +31,7 @@ Environment=HOME=/home/bdl
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
 WorkingDirectory=/home/bdl
 ExecStart=/bin/bash /home/bdl/bdl-pool-site/monitoring/publish.sh
-TimeoutStartSec=120
+TimeoutStartSec=210
 UMask=0077
 NoNewPrivileges=true
 PrivateTmp=true

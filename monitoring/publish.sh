@@ -27,6 +27,11 @@ python3 "$script_dir/collect.py" --previous "$stats_repo/status.json" > "$scratc
 cp "$scratch" "$stats_repo/status.json"
 # Never git add a directory, configuration, log, wallet, or authentication file.
 git -C "$stats_repo" add -- status.json
+if [[ -f "$HOME/.config/bdl-pool-bch/monitor.json" ]]; then
+  python3 "$script_dir/collect.py" --profile "$HOME/.config/bdl-pool-bch/monitor.json" --previous "$stats_repo/status-bch.json" > "$scratch"
+  cp "$scratch" "$stats_repo/status-bch.json"
+  git -C "$stats_repo" add -- status-bch.json
+fi
 git -C "$stats_repo" -c user.name='BDL Pool monitoring' -c user.email='86241016+bdlglua@users.noreply.github.com' commit -m 'Update public pool snapshot'
 git -C "$stats_repo" push origin HEAD:stats
 echo 'Relevé publié sur GitHub.'

@@ -5,9 +5,10 @@
   const locale = en ? 'en-GB' : 'fr-FR';
   const t = (fr, english) => en ? english : fr;
   const $ = id => document.getElementById(id);
-  const base = String(window.BDL_POOL_CONFIG?.apiBaseUrl || 'https://api.bdl-pool.com:36018/api/v1').replace(/\/$/, '');
+  const bch = window.BDL_POOL_ACTIVE?.coin === 'bch';
+  const base = String(window.BDL_POOL_ACTIVE?.config.apiBaseUrl || '').replace(/\/$/, '');
   const addressPattern = /^(?:[13][1-9A-HJ-NP-Za-km-z]{25,34}|bc1[ac-hj-np-z02-9]{11,87})$/;
-  const addressInText = /(?:[13][1-9A-HJ-NP-Za-km-z]{25,34}|bc1[ac-hj-np-z02-9]{11,87})/g;
+  const addressInText = bch ? /(?:bitcoincash:)?[qp][a-z0-9]{41}/gi : /(?:[13][1-9A-HJ-NP-Za-km-z]{25,34}|bc1[ac-hj-np-z02-9]{11,87})/g;
   const pageSize = 10;
   let onlineOffset = 0, onlineData = null, onlineBusy = false;
   let selected = null, selectedData = null, selectedFailed = false, selectedBusy = false, generation = 0, controller = null;
@@ -61,6 +62,7 @@
     if (!response.ok) { const error=new Error('API');error.status=response.status;throw error; }
     const data=await response.json();
     if (data.apiVersion!=='1') throw new Error('Invalid API schema');
+    if (bch && data.coin !== 'bch') throw new Error('Wrong network response');
     return data;
   }
   function renderOnline(data, failed=false) {
@@ -148,8 +150,8 @@
   $('miner-search').addEventListener('submit',event=>{
     event.preventDefault();controller?.abort();generation++;selectedBusy=false;selectedData=null;$('miner-statistics').hidden=true;
     const enteredAddress=$('miner-lookup-address').value.trim();
-    const address=enteredAddress.startsWith('BC1') && enteredAddress===enteredAddress.toUpperCase() ? enteredAddress.toLowerCase() : enteredAddress;
-    if (!addressPattern.test(address)) { selected=null;$('miner-lookup-address').setAttribute('aria-invalid','true');message('miner-search-message',t('Vérifiez votre adresse Bitcoin.','Check your Bitcoin address.'),true);return; }
+    const address=window.BDL_POOL_ACTIVE.address(enteredAddress);
+    if (!address) { selected=null;$('miner-lookup-address').setAttribute('aria-invalid','true');message('miner-search-message',bch ? t('Vérifiez votre adresse CashAddr Bitcoin Cash.','Check your Bitcoin Cash CashAddr.') : t('Vérifiez votre adresse Bitcoin.','Check your Bitcoin address.'),true);return; }
     $('miner-lookup-address').removeAttribute('aria-invalid');selected={address,offset:0};message('miner-search-message',t('Chargement…','Loading…'));loadSelected(true);
   });
   $('miner-lookup-address').addEventListener('input',()=>$('miner-lookup-address').removeAttribute('aria-invalid'));

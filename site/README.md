@@ -4,6 +4,12 @@ The website uses Next.js 16 (App Router), React and TypeScript. It builds to
 static HTML, CSS and JavaScript in `out/` for `bdl-pool.com` on GitHub Pages.
 Bitcoin Core, CKPool, the API and monitoring run independently.
 
+The network selector keeps BTC/BCH in the `coin` query parameter across pages
+and languages. BCH has independent API/snapshot URLs, CashAddr validation and
+Stratum V1 settings discovered from the server. Server installation is documented
+in [bch/README.md](../bch/README.md); publishing the website alone does not start
+the BCH mining pool.
+
 ## Develop and verify
 
 Use Node.js 20.9 or newer (CI uses Node.js 24):
