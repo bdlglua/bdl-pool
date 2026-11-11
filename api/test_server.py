@@ -191,13 +191,18 @@ class APITests(unittest.TestCase):
         for request, status in ((b'TRACE /api/v1/pool HTTP/1.1\r\nHost: x\r\n\r\n', '405'),
                                 (b'<script>PRIVATE_TEST</script> /api/v1/pool HTTP/1.1\r\nHost: x\r\n\r\n', '405'),
                                 (b'GET /api/v1/pool HTTP/1.1 PRIVATE_TEST extra\r\n\r\n', '400'),
+                                (b'GET /api/v1/pool HTTP/PRIVATE_TEST\r\n\r\n', '400'),
+                                (b'GET /api/v1/pool HTTP/2.0\r\n\r\n', '505'),
+                                (b'POST /api/v1/PRIVATE_TEST\r\n\r\n', '400'),
                                 (b'GET /'+b'a'*70000+b' HTTP/1.1\r\nHost: x\r\n\r\n', '414')):
-            head, body = self.raw(request)
-            self.assertEqual(head.split()[1], status)
-            self.assertIn('application/json', head)
-            self.assertNotIn('text/html', head)
-            self.assertNotIn(b'PRIVATE_TEST', head.encode()+body)
-            self.assertIn(json.loads(body)['error']['code'], ('method_not_allowed', 'invalid_request'))
+            with self.subTest(request=request[:80], status=status):
+                head, body = self.raw(request)
+                self.assertTrue(head.startswith('HTTP/1.'), head[:80])
+                self.assertEqual(head.split()[1], status)
+                self.assertIn('application/json', head)
+                self.assertNotIn('text/html', head)
+                self.assertNotIn(b'PRIVATE_TEST', head.encode()+body)
+                self.assertIn(json.loads(body)['error']['code'], ('method_not_allowed', 'invalid_request'))
 
     def test_disconnected_clients_leave_no_traceback_in_the_journal(self):
         journal = io.StringIO()
