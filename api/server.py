@@ -10,8 +10,8 @@ import math
 import os
 from pathlib import Path
 import re
-import socket
 import stat
+import sys
 import threading
 import time
 from urllib.parse import parse_qs, unquote, urlsplit
@@ -435,22 +435,33 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header('Allow', 'GET, HEAD, OPTIONS')
         if status == 503:
             self.send_header('Retry-After', '5')
-        if status != 204 and not cached:
-            self.send_header('Content-Length', str(len(body)))
+        if status != 204:
+            # A 304 repeats the validator of the 200 it stands for (RFC 9110, 15.4.5).
             self.send_header('ETag', etag)
+            if not cached:
+                self.send_header('Content-Length', str(len(body)))
         self.end_headers()
         if not head and not cached and status != 204:
             self.wfile.write(body)
 
+    def send_error(self, code, message=None, explain=None):
+        """Malformed requests and unknown methods get the JSON error shape,
+        never the standard library's HTML page that echoes request details."""
+        head = getattr(self, 'command', None) == 'HEAD'
+        if code == 501:
+            self.respond(405, dict(error=dict(code='method_not_allowed', message='This API is read-only.')), head)
+        else:
+            status = code if isinstance(code, int) and 400 <= code <= 599 else 400
+            self.respond(status, dict(error=dict(code='invalid_request', message='Invalid HTTP request.')), head)
+
     def read(self, head=False):
         try:
-            self.respond(200, self.server.api.dispatch(self.path), head)
+            status, data = 200, self.server.api.dispatch(self.path)
         except APIError as error:
-            self.respond(error.status, dict(error=dict(code=error.code, message=error.message)), head)
-        except (BrokenPipeError, ConnectionResetError, socket.timeout):
-            pass
+            status, data = error.status, dict(error=dict(code=error.code, message=error.message))
         except Exception:
-            self.respond(503, dict(error=dict(code='service_unavailable', message='Service temporarily unavailable.')), head)
+            status, data = 503, dict(error=dict(code='service_unavailable', message='Service temporarily unavailable.'))
+        self.respond(status, data, head)
 
     def do_GET(self):
         self.read()
@@ -475,6 +486,13 @@ class Server(ThreadingHTTPServer):
         self.api = api
         self.slots = threading.BoundedSemaphore(16)
         super().__init__(address, Handler)
+
+    def handle_error(self, request, client_address):
+        # A client that disconnects mid-request is routine. Never write the
+        # default multi-line traceback per connection to the journal.
+        error = sys.exc_info()[1]
+        if not isinstance(error, (OSError, ValueError)):
+            print('Request handler error: '+type(error).__name__, file=sys.stderr, flush=True)
 
     def process_request(self, request, client_address):
         if not self.slots.acquire(blocking=False):

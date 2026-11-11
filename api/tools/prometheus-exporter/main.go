@@ -17,6 +17,9 @@ import (
 
 const defaultAPIBaseURL = "https://api.bdl-pool.com:36018/api/v1"
 
+// The /pool document is a few hundred bytes; never buffer an unbounded reply.
+const maxResponseBytes = 1 << 20
+
 type poolSnapshot struct {
 	APIVersion string `json:"apiVersion"`
 	Stale      bool   `json:"stale"`
@@ -85,7 +88,7 @@ func (e *exporter) scrape(ctx context.Context) error {
 	}
 
 	var snapshot poolSnapshot
-	decoder := json.NewDecoder(response.Body)
+	decoder := json.NewDecoder(io.LimitReader(response.Body, maxResponseBytes))
 	if err := decoder.Decode(&snapshot); err != nil {
 		return fail(fmt.Errorf("decode pool response: %w", err))
 	}
@@ -204,8 +207,8 @@ func main() {
 	intervalSeconds := int64(30)
 	if configured := os.Getenv("BDL_POOL_SCRAPE_SECONDS"); configured != "" {
 		parsed, err := strconv.ParseInt(configured, 10, 64)
-		if err != nil || parsed < 5 {
-			log.Fatal("BDL_POOL_SCRAPE_SECONDS must be an integer of at least 5")
+		if err != nil || parsed < 5 || parsed > 86400 {
+			log.Fatal("BDL_POOL_SCRAPE_SECONDS must be an integer between 5 and 86400")
 		}
 		intervalSeconds = parsed
 	}
@@ -245,6 +248,10 @@ func main() {
 		Addr:              listenAddress,
 		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    1 << 14,
 	}
 	log.Printf("BDL Pool Prometheus exporter listening on %s", listenAddress)
 	log.Fatal(server.ListenAndServe())

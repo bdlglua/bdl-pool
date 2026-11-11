@@ -34,8 +34,9 @@ class NoRedirect(HTTPRedirectHandler):
 
 def settings():
     data = json.loads(CONFIG.read_text())
-    if (data.get('domain') != 'bdl-pool.duckdns.org'
-            or not re.fullmatch(r'[A-Za-z0-9-]{20,80}', data.get('token', ''))
+    if (not isinstance(data, dict) or data.get('domain') != 'bdl-pool.duckdns.org'
+            or not isinstance(data.get('token'), str)
+            or not re.fullmatch(r'[A-Za-z0-9-]{20,80}', data['token'])
             or data.get('relayHost') != 'openport.pw'
             or type(data.get('apiPort')) is not int or not 1 <= data['apiPort'] <= 65535):
         raise DNSError('Configuration DNS invalide.')
@@ -70,7 +71,7 @@ def dig(name, kind, server=None):
 def authoritative_servers():
     servers = []
     for name in dig('duckdns.org', 'NS'):
-        if not re.fullmatch(r'[A-Za-z0-9.-]{1,253}', name):
+        if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9.-]{0,252}', name):  # Never a dig option.
             continue
         for value in dig(name, 'A'):
             try:

@@ -15,7 +15,11 @@ import time
 def number(value, integer=False):
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return None
-    if not math.isfinite(value) or value < 0 or (integer and int(value) != value):
+    try:
+        if not math.isfinite(value) or value < 0 or (integer and int(value) != value):
+            return None
+    except OverflowError:
+        # An integer too large for a float must not stop every later collection.
         return None
     return int(value) if integer else value
 
@@ -23,7 +27,7 @@ def number(value, integer=False):
 def hashrate(value):
     if isinstance(value, (int, float)):
         return number(value)
-    if not isinstance(value, str):
+    if not isinstance(value, str) or len(value) > 40:
         return None
     match = re.fullmatch(r'\s*(\d+(?:\.\d+)?)\s*([kKMGTPE]?)\s*(?:[hH](?:/s)?)?\s*', value)
     if not match:
@@ -100,7 +104,7 @@ def node_from_snapshot(previous, now):
             return None
         node['updatedAt'] = observed.astimezone(timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')
         return node
-    except (ValueError, TypeError, AttributeError):
+    except (ValueError, TypeError, AttributeError, OverflowError):
         return None
 
 
@@ -112,7 +116,7 @@ def previous_node(path, now):
         node = node_from_snapshot(json.loads(path.read_text()), now)
         if node is not None:
             return node
-    except (OSError, ValueError):
+    except (OSError, ValueError, RecursionError):
         pass
     # Upgrade recovery: the older collector may already have overwritten its
     # latest reading with nulls. Read bounded local history without modifying it.
@@ -133,7 +137,7 @@ def previous_node(path, now):
                                     timeout=max(.01, deadline - time.monotonic()), check=True)
             try:
                 node = node_from_snapshot(json.loads(result.stdout), now)
-            except ValueError:
+            except (ValueError, RecursionError):
                 continue
             if node is not None:
                 print('Dernier relevé réussi du nœud récupéré depuis l’historique local.', file=sys.stderr)
@@ -177,9 +181,11 @@ def pool_info(path, now):
     empty = dict(ready=False, hashrateHps=None, workers=None, bestShare=None, blocksFound=None)
     try:
         # CKPool writes several consecutive JSON objects, rather than one JSON document.
-        text = path.read_text()
-        if len(text) > 262144:
+        with path.open('rb') as stream:
+            raw = stream.read(262145)  # Bounded: never load an unexpectedly large file.
+        if len(raw) > 262144:
             return empty, 'invalid'
+        text = raw.decode('utf-8')
         decoder = json.JSONDecoder()
         data = {}
         while text.strip():
@@ -200,7 +206,7 @@ def pool_info(path, now):
         return empty, 'ok'
     except FileNotFoundError:
         return empty, 'missing'
-    except (OSError, ValueError, TypeError):
+    except (OSError, ValueError, TypeError, RecursionError):
         return empty, 'invalid'
 
 
@@ -243,17 +249,22 @@ def stratum_check(host, port, timeout=5):
 
 def history_from(path, now):
     try:
-        data = json.loads(Path(path).read_text())
-        history = data.get('history', [])
-        clean = []
-        for point in history[-288:]:
-            stamp = datetime.fromisoformat(point['time'].replace('Z', '+00:00')).timestamp()
-            rate = number(point['hashrateHps'])
-            if now - 86400 <= stamp <= now and rate is not None:
-                clean.append(dict(time=point['time'], hashrateHps=rate))
-        return sorted(clean, key=lambda point: point['time'])
-    except (OSError, ValueError, TypeError, KeyError, AttributeError):
+        history = json.loads(Path(path).read_text()).get('history', [])
+    except (OSError, ValueError, AttributeError, RecursionError):
         return []
+    clean = []
+    for point in history[-288:] if isinstance(history, list) else []:
+        # One damaged point must not discard the other measurements.
+        try:
+            observed = datetime.fromisoformat(point['time'].replace('Z', '+00:00'))
+            if observed.tzinfo is None:
+                continue
+            stamp, rate = observed.timestamp(), number(point['hashrateHps'])
+            if now - 86400 <= stamp <= now and rate is not None:
+                clean.append((stamp, dict(time=utc_timestamp(stamp), hashrateHps=rate)))
+        except (ValueError, TypeError, KeyError, AttributeError, OverflowError):
+            continue
+    return [point for _, point in sorted(clean, key=lambda item: item[0])]
 
 
 def main():

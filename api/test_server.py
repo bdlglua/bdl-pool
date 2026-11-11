@@ -1,9 +1,13 @@
+import contextlib
 import hashlib
 import http.client
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
+import socket
+import struct
 import tempfile
 import threading
 import time
@@ -167,6 +171,47 @@ class APITests(unittest.TestCase):
         for method in ('POST', 'PUT', 'PATCH', 'DELETE'):
             self.assertEqual(self.request('/api/v1/pool', method)[0], 405)
         self.assertEqual(hashlib.sha256(self.snapshot.read_bytes()).hexdigest(), original)
+
+    def test_not_modified_keeps_its_validator(self):
+        status, headers, body = self.request('/api/v1/health')
+        status, cached, body = self.request('/api/v1/health', headers={'If-None-Match': headers['ETag']})
+        self.assertEqual(status, 304);self.assertIsNone(body)
+        self.assertEqual(cached['ETag'], headers['ETag'])
+
+    def raw(self, request):
+        with socket.create_connection(('127.0.0.1', self.server.server_port), timeout=3) as client:
+            client.sendall(request)
+            reply = b''
+            while chunk := client.recv(65536):
+                reply += chunk
+        head, _, body = reply.partition(b'\r\n\r\n')
+        return head.decode('latin-1'), body
+
+    def test_unknown_methods_and_malformed_requests_get_json_without_echo(self):
+        for request, status in ((b'TRACE /api/v1/pool HTTP/1.1\r\nHost: x\r\n\r\n', '405'),
+                                (b'<script>PRIVATE_TEST</script> /api/v1/pool HTTP/1.1\r\nHost: x\r\n\r\n', '405'),
+                                (b'GET /api/v1/pool HTTP/1.1 PRIVATE_TEST extra\r\n\r\n', '400'),
+                                (b'GET /'+b'a'*70000+b' HTTP/1.1\r\nHost: x\r\n\r\n', '414')):
+            head, body = self.raw(request)
+            self.assertEqual(head.split()[1], status)
+            self.assertIn('application/json', head)
+            self.assertNotIn('text/html', head)
+            self.assertNotIn(b'PRIVATE_TEST', head.encode()+body)
+            self.assertIn(json.loads(body)['error']['code'], ('method_not_allowed', 'invalid_request'))
+
+    def test_disconnected_clients_leave_no_traceback_in_the_journal(self):
+        journal = io.StringIO()
+        with contextlib.redirect_stderr(journal):
+            for request in (b'GET /api/v1/pool HTTP/1.1\r\nHost: x\r\n\r\n', b'GET /api/v1/miners/'+ADDRESS.encode()):
+                for _ in range(5):
+                    client = socket.create_connection(('127.0.0.1', self.server.server_port), timeout=3)
+                    # Reset the connection instead of closing it cleanly.
+                    client.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0))
+                    client.sendall(request)
+                    client.close()
+            time.sleep(.5)
+            self.assertEqual(self.request('/api/v1/health')[0], 200)
+        self.assertEqual(journal.getvalue(), '')
 
     def test_corrupt_or_nonfinite_statistics(self):
         for text in ('{"shares":', '{"shares":NaN}', '[]'):

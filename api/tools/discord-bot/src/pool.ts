@@ -44,8 +44,12 @@ function isPoolSnapshot(value: unknown): value is PoolSnapshot {
     && typeof pool.readyAtLastCheck === "boolean"
     && (typeof node.initialBlockDownload === "boolean" || node.initialBlockDownload === null)
     && typeof node.stale === "boolean"
-    && typeof value.checks.stratum === "string";
+    // Shown verbatim in the embed: accept only short status identifiers.
+    && typeof value.checks.stratum === "string" && /^[a-z_]{1,40}$/.test(value.checks.stratum);
 }
+
+/** An error whose message was written here and is safe to show in Discord. */
+class PoolError extends Error {}
 
 function formatHashrate(value: number | null): string {
   if (value === null) return "Inconnu";
@@ -61,9 +65,9 @@ function formatHashrate(value: number | null): string {
 
 async function getPool(): Promise<PoolSnapshot> {
   const response = await fetch(`${apiBaseUrl}/pool`, { signal: AbortSignal.timeout(8000) });
-  if (!response.ok) throw new Error(`L’API répond HTTP ${response.status}`);
+  if (!response.ok) throw new PoolError(`L’API répond HTTP ${response.status}`);
   const value: unknown = await response.json();
-  if (!isPoolSnapshot(value)) throw new Error("Réponse /pool invalide");
+  if (!isPoolSnapshot(value)) throw new PoolError("Réponse /pool invalide");
   return value;
 }
 
@@ -112,7 +116,8 @@ async function replyWithPool(
     const snapshot = await getPool();
     await interaction.editReply({ embeds: [makeEmbed(snapshot)] });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Erreur de lecture de l’API";
+    // Runtime errors can quote the upstream reply or internal addresses: keep them out of Discord.
+    const message = error instanceof PoolError ? error.message : "API injoignable ou réponse illisible";
     try {
       await interaction.editReply(`Impossible de lire l’état du pool : ${message}`);
     } catch (replyError) {

@@ -1,4 +1,5 @@
 import contextlib
+from datetime import datetime, timedelta, timezone
 import importlib.util
 import io
 import json
@@ -183,6 +184,44 @@ class CollectorTests(unittest.TestCase):
         data, _ = self.run_snapshot(previous, fresh, 'ok')
         self.assertEqual(data['checks']['bitcoin'], 'ok')
         self.assertEqual(data['node'], fresh)
+
+    def test_damaged_previous_snapshot_never_stops_collection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            now = time.time()
+            good = collect.utc_timestamp(now-600)
+            path = Path(directory)/'status.json'
+            # An integer too large for a float, a foreign type and unusable dates.
+            path.write_text('{"history":[{"time":"%s","hashrateHps":1%s},{"time":"%s","hashrateHps":5},'
+                            '"text",{"time":"0001-01-01T00:00:00+10:00","hashrateHps":1},'
+                            '{"time":"2026-01-01T00:00:00","hashrateHps":1},{"hashrateHps":2}],'
+                            '"source":"snapshot","checks":{"bitcoin":"ok"},"updatedAt":"0001-01-01T00:00:00+10:00",'
+                            '"node":{"chain":"main","blocks":1%s,"headers":1,"verificationProgress":1,"initialBlockDownload":false}}'
+                            % (good, '0'*400, good, '0'*400))
+            self.assertEqual(collect.history_from(path, now), [dict(time=good, hashrateHps=5)])
+            self.assertIsNone(collect.previous_node(path, now))
+            path.write_text('{"history":'+'['*100000+']'*100000+'}')
+            self.assertEqual(collect.history_from(path, now), [])
+            self.assertIsNone(collect.previous_node(path, now))
+        self.assertIsNone(collect.number(10**400))
+        self.assertIsNone(collect.number(10**400, integer=True))
+        self.assertIsNone(collect.hashrate('9'*400))
+
+    def test_history_is_ordered_by_instant_and_normalised(self):
+        with tempfile.TemporaryDirectory() as directory:
+            now = int(time.time())
+            path = Path(directory)/'status.json'
+            later = datetime.fromtimestamp(now-300, timezone(timedelta(hours=2))).isoformat()
+            path.write_text(json.dumps(dict(history=[dict(time=later, hashrateHps=2),
+                                                     dict(time=collect.utc_timestamp(now-600), hashrateHps=1)])))
+            self.assertEqual(collect.history_from(path, now),
+                             [dict(time=collect.utc_timestamp(now-600), hashrateHps=1),
+                              dict(time=collect.utc_timestamp(now-300), hashrateHps=2)])
+
+    def test_oversized_pool_statistics_are_not_loaded(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'pool.status'
+            path.write_text('{"hashrate5m":"1K","lastupdate":%d}\n' % time.time()+' '*300000)
+            self.assertEqual(collect.pool_info(path, time.time())[1], 'invalid')
 
     def test_stratum_requires_subscription_and_job(self):
         for with_job in (False, True):
