@@ -1,0 +1,22 @@
+name: Pool API and BCH relay checks
+
+on:
+  pull_request:
+    paths: ["bch/**", "monitoring/**", "api/**", ".github/workflows/bch.yml"]
+  push:
+    branches: [main]
+    paths: ["bch/**", "monitoring/**", "api/**", ".github/workflows/bch.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - run: python3 -m unittest discover -s api -p 'test_*.py'
+      - run: python3 -m unittest discover -s monitoring -p 'test_*.py'
+      - run: python3 -m unittest discover -s bch -p 'test_*.py'
+      - run: bash -n bch/build.sh bch/install.sh monitoring/install-openport.sh

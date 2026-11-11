@@ -21,7 +21,7 @@ from urllib.request import urlopen
 spec = importlib.util.spec_from_file_location('openport_client', Path(__file__).with_name('try-openport.py'))
 client = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(client)
-PORTS = {'v1': 3333, 'v2': 3336, 'api': 443}
+PORTS = {'v1': 3333, 'v2': 3336, 'api': 443, 'bch': 3334}
 
 
 def local_api_healthy(host):

@@ -107,12 +107,27 @@ WantedBy=multi-user.target
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--payout', required=True, help='Public BCH mainnet fallback receiving address')
-    parser.add_argument('--public-host', required=True)
-    parser.add_argument('--public-port', required=True, type=int)
+    parser.add_argument('--public-host')
+    parser.add_argument('--public-port', type=int)
+    parser.add_argument('--from-relay', action='store_true', help='Use the independently tested local BCH OpenPort profile')
     parser.add_argument('--local-port', default=3334, type=int)
     parser.add_argument('--destdir', type=Path, default=Path('/'), help='Staging root; no service changes')
     args = parser.parse_args()
     try:
+        if args.from_relay:
+            if args.public_host is not None or args.public_port is not None or args.local_port != 3334:
+                parser.error('--from-relay utilise le profil BCH et son port local 3334 ; omettre les options de port/domaine.')
+            spec = importlib.util.spec_from_file_location('bch_relay_setup', Path(__file__).with_name('relay.py'))
+            relay = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(relay)
+            profile = Path.home()/'.local/state/bdl-pool-openport/bch'
+            try:
+                public = relay.route_for_pool(profile)
+            except relay.client.TrialError as error:
+                raise ValueError(str(error)) from None
+            args.public_host, args.public_port = public['host'], public['port']
+        elif not args.public_host or args.public_port is None:
+            parser.error('Utiliser --from-relay, ou fournir --public-host et --public-port.')
         prepare(args.destdir, args.payout, args.public_host, args.public_port, args.local_port)
     except (ValueError, OSError) as error:
         parser.exit(1, str(error)+'\n')

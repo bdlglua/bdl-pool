@@ -50,26 +50,54 @@ Les binaires sont installés dans `~/.local/opt/bchn-29.2.0/bin` et
 
 ## Réserver le vrai accès Stratum BCH
 
-Créer un **nouveau relais TCP** chez le fournisseur existant (OpenPort) vers
-`127.0.0.1:3334`. Conserver les trois relais BTC V1, BTC V2 et API existants.
-Noter le nom DNS réellement routé vers ce relais et son port public réellement
-attribué. Un port dans la page web ne crée pas le relais. Ne pas réutiliser
-39991 ou 36809, ni annoncer un numéro arbitraire.
+Dans la VM Freebox, sous `bdl`, installer le relais dédié :
+
+```bash
+cd /home/bdl/bdl-pool-site
+python3 bch/relay.py install
+```
+
+Cette étape peut être effectuée avant la compilation du nœud et avant d’avoir
+une adresse de portefeuille. Elle crée le profil **bch**, vérifie deux fois le
+trajet public avec un serveur HTTP temporaire puis installe uniquement l’unité
+`bdl-pool-openport@bch.service`, vers `127.0.0.1:3334`. La seconde vérification
+réutilise l’identité sauvegardée et confirme la conservation du port. Les trois
+profils BTC V1, BTC V2 et API sont seulement lus pour empêcher une collision de
+ports ou d’identités ; ils ne sont ni réenregistrés ni redémarrés. Le template de
+service existant n’est pas remplacé. Les connexions sont sortantes : aucune
+redirection de port Freebox supplémentaire n’est nécessaire.
+
+L’outil affiche uniquement l’adresse publique et conserve l’identité dans
+`~/.local/state/bdl-pool-openport/bch/` (dossier 700, fichiers privés 600).
+Un profil BCH actif est conservé sur une seconde installation. Une identité
+illisible ou un port modifié interrompt l’installation sans demander d’identité
+de remplacement. Le test valide le transport vers un serveur temporaire,
+pas le minage : BCH attend encore son nœud synchronisé et des shares acceptées.
+
+Pour retrouver l’adresse ou arrêter uniquement BCH :
+
+```bash
+python3 bch/relay.py status
+sudo systemctl disable --now bdl-pool-openport@bch.service
+```
+
+Conserver le dossier du profil pour retrouver le port lors d’une reprise.
+Un port dans la page web ne crée pas le relais ; le numéro doit avoir été
+réellement attribué et testé par OpenPort.
 
 Le port RPC 8432 et le socket IPC restent privés. Aucun nouveau relais n’est
 nécessaire pour l’API : les routes BCH passent par le HTTPS existant.
 
 ## Préparer et démarrer
 
-Remplacer les trois valeurs ci-dessous par votre **adresse BCH publique** de
-secours et le **vrai domaine/port du relais BCH**. Ne pas utiliser une adresse
-d’exemple, une adresse BTC ou une clé privée.
+Après installation du relais, fournir votre **adresse BCH publique** de secours.
+L’option `--from-relay` reprend le vrai domaine/port du profil BCH vérifié.
+Ne pas utiliser une adresse d’exemple, une adresse BTC ou une clé privée.
 
 ```bash
 bash bch/install.sh \
   --payout 'VOTRE_CASHADDR_BCH_MAINNET' \
-  --public-host 'VOTRE_DOMAINE_STRATUM_BCH' \
-  --public-port PORT_PUBLIC_ATTRIBUE
+  --from-relay
 ```
 
 L’installation prépare les fichiers et les deux unités, sans les démarrer.
@@ -82,6 +110,8 @@ Pour inspecter la préparation sans installer de service, appeler directement
 `python3 bch/configure.py` avec les mêmes options et `--destdir /tmp/bch-stage`.
 Les chemins dans les unités restent ceux de la destination finale ; cette option
 sert à examiner les fichiers et ne crée pas une installation exécutable déplacée.
+Dans une préparation hors de la VM sans profil OpenPort, fournir explicitement
+`--public-host` et `--public-port` au lieu de `--from-relay`.
 
 Après préparation :
 
