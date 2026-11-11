@@ -43,7 +43,13 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm run typecheck
-      - run: npx playwright install --with-deps chromium
+      # Ubuntu runners already provide Chrome and its native dependencies.
+      # Keep browser tests independent of transient Ubuntu mirror failures.
+      - name: Use runner Chrome for browser tests
+        run: |
+          bdl_chrome_path="$(command -v google-chrome)"
+          "$bdl_chrome_path" --version
+          printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$bdl_chrome_path" >> "$GITHUB_ENV"
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v4
         if: failure()
