@@ -29,8 +29,7 @@ export function PageScripts({
     setReady(true);
   }, [page, lang]);
 
-  const scripts = ["/assets/site.js", "/assets/navigation.js"];
-  if (page !== "api") scripts.push("/config.js");
+  const scripts = ["/config.js", "/assets/coins.js", "/assets/site.js", "/assets/navigation.js"];
   if (page === "statistics")
     scripts.push("/assets/vendor/chart.umd.min.js", "/assets/pulse-chart.js");
   if (["home", "statistics", "connect", "faq"].includes(page))

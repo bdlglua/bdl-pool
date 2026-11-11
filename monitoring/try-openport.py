@@ -224,12 +224,12 @@ def run_trial(binary, mode, profile, duration):
             port = server.server_port
             print('Test du tunnel uniquement : aucune connexion de minage.', flush=True)
         else:
-            port = 3333 if mode == 'v1' else 3336
+            port = {'v1': 3333, 'v2': 3336, 'bch': 3334}[mode]
             try:
                 with socket.create_connection(('127.0.0.1', port), timeout=2):
                     pass
             except OSError:
-                raise TrialError(f'CKPool ne répond pas sur le port {port}. Le mode test reste utilisable pendant la synchronisation.') from None
+                raise TrialError(f'Le pool ne répond pas sur le port {port}. Le mode test reste utilisable pendant la synchronisation.') from None
         identity = credentials(profile)
         public = connect(identity, port, profile)
         def keep_alive():
@@ -288,8 +288,8 @@ def interrupt(*_):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('mode', nargs='?', choices=('test', 'v1', 'v2'), default='test')
-    parser.add_argument('--profile', choices=('v1', 'v2'), default=None)
+    parser.add_argument('mode', nargs='?', choices=('test', 'v1', 'v2', 'bch'), default='test')
+    parser.add_argument('--profile', choices=('v1', 'v2', 'bch'), default=None)
     parser.add_argument('--timeout', type=int, default=600)
     args = parser.parse_args()
     if not 1 <= args.timeout <= 600:

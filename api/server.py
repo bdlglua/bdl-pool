@@ -18,6 +18,7 @@ from urllib.parse import parse_qs, unquote, urlsplit
 
 MAX_FILE = 1048576
 ADDRESS = re.compile(r'(?:[13][1-9A-HJ-NP-Za-km-z]{25,34}|bc1[ac-hj-np-z02-9]{11,87})')
+BCH_ADDRESS = re.compile(r'(?:bitcoincash:)?[qp][a-z0-9]{41}', re.I)
 WORKER = re.compile(r'[A-Za-z0-9._-]{1,128}')
 RATES = {'1m': 'hashrate1m', '5m': 'hashrate5m', '1h': 'hashrate1hr',
          '1d': 'hashrate1d', '7d': 'hashrate7d'}
@@ -27,11 +28,43 @@ MODELS = ('M5StickC Plus2', 'M5StickC Plus', 'M5Stack CoreS3', 'M5Stack Core2',
           'Bitaxe Gamma', 'Bitaxe Supra', 'Bitaxe Ultra', 'Bitaxe Hex', 'Bitaxe')
 
 
-def worker_identity(name):
-    if not isinstance(name, str) or not WORKER.fullmatch(name):
+def canonical_address(address, coin='btc'):
+    """BCH uses checksummed mainnet CashAddr, never ambiguous BTC legacy logins."""
+    if not isinstance(address, str):
         return None
-    match = re.fullmatch('('+ADDRESS.pattern+r')(?:[._]([A-Za-z0-9._-]{1,64}))?', name)
-    return (match[1], match[2]) if match else None
+    if coin == 'btc':
+        return address if ADDRESS.fullmatch(address) else None
+    if coin != 'bch' or not BCH_ADDRESS.fullmatch(address) or (address != address.lower() and address != address.upper()):
+        return None
+    value = address.lower()
+    payload = value.split(':')[-1]
+    charset = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l'
+    if any(c not in charset for c in payload):
+        return None
+    values = [ord(c) & 31 for c in 'bitcoincash'] + [0] + [charset.index(c) for c in payload]
+    checksum = 1
+    for item in values:
+        top = checksum >> 35
+        checksum = ((checksum & 0x07ffffffff) << 5) ^ item
+        for bit, generator in enumerate((0x98f2bc8e61, 0x79b76d99e2, 0xf33e5fb3c4, 0xae2eabe2a8, 0x1e4f43e470)):
+            if (top >> bit) & 1:
+                checksum ^= generator
+    # 42 symbols encode a version byte and a 160-bit hash, plus eight checksum symbols.
+    raw = 0
+    for character in payload[:-8]:
+        raw = (raw << 5) | charset.index(character)
+    if checksum != 1 or raw & 3 or raw >> 162 not in (0, 8):
+        return None
+    return 'bitcoincash:' + payload
+
+
+def worker_identity(name, coin='btc'):
+    if not isinstance(name, str) or len(name) > 128:
+        return None
+    pattern = ADDRESS.pattern if coin == 'btc' else BCH_ADDRESS.pattern
+    match = re.fullmatch('('+pattern+r')(?:[._]([A-Za-z0-9._-]{1,64}))?', name, re.I if coin == 'bch' else 0)
+    address = canonical_address(match[1], coin) if match else None
+    return (address, match[2]) if address else None
 
 
 def device_from_agent(agent):
@@ -193,7 +226,11 @@ def valid_public_key(key):
 
 
 class PoolAPI:
-    def __init__(self, config):
+    def __init__(self, config, coin='btc'):
+        self.coin = coin
+        self.coins = {}
+        if coin == 'btc' and isinstance(config.get('coins'), dict) and 'bch' in config['coins']:
+            self.coins['bch'] = PoolAPI(config['coins']['bch'], 'bch')
         self.snapshot = Path(config['snapshot'])
         self.logs = Path(config['logs'])
         self.public_key_file = Path(config['sv2Public'])
@@ -216,6 +253,8 @@ class PoolAPI:
         stamp = timestamp(data.get('updatedAt'))
         if stamp is None or data.get('source') not in ('snapshot', 'live'):
             raise APIError(503, 'snapshot_unavailable', 'No valid monitoring snapshot is available.')
+        if data.get('coin', 'btc') != self.coin:
+            raise APIError(503, 'wrong_network', 'The snapshot belongs to another network.')
         metadata = freshness(stamp, 900)
         raw_node = data.get('node') if isinstance(data.get('node'), dict) else {}
         node = {key: number(raw_node.get(key), True) for key in ('blocks', 'headers')}
@@ -233,7 +272,7 @@ class PoolAPI:
                 for key in ('hashrateHps', 'workers', 'bestShare', 'blocksFound')}
         pool['readyAtLastCheck'] = (raw_pool.get('ready') is True and not metadata['stale'] and not node['stale']
                                    and all(node.get(key) is not None for key in ('chain', 'blocks', 'headers', 'verificationProgress'))
-                                   and node['initialBlockDownload'] is False and public_checks['bitcoin'] == 'ok'
+                                   and node['chain'] == 'main' and node['initialBlockDownload'] is False and public_checks['bitcoin'] == 'ok'
                                    and public_checks['stratum'] == 'job_received')
         return dict(apiVersion='1', source=data['source'], **metadata, pool=pool, node=node, checks=public_checks)
 
@@ -256,19 +295,20 @@ class PoolAPI:
         try:
             public, _ = read_json(self.public_key_file)
             candidate = public.get('authorityPublicKey')
-            if valid_public_key(candidate):
+            if self.coin == 'btc' and valid_public_key(candidate):
                 key = candidate
         except (FileNotFoundError, APIError):
             pass
         return dict(apiVersion='1', v1=dict(host=self.host, port=self.v1_port,
                     url=f'stratum+tcp://{self.host}:{self.v1_port}'),
-                    v2=dict(configured=key is not None, host=self.host, port=self.v2_port,
+                    v2=dict(configured=key is not None, host=self.host if self.coin == 'btc' else None, port=self.v2_port if self.coin == 'btc' else None,
                     authorityPublicKey=key, url=f'stratum2+tcp://{self.host}:{self.v2_port}/{key}' if key else None,
                     availability='not_verified'))
 
     def miner(self, address):
-        if not ADDRESS.fullmatch(address):
-            raise APIError(400, 'invalid_address', 'Use a Bitcoin mainnet address without a worker suffix.')
+        address = canonical_address(address, self.coin)
+        if address is None:
+            raise APIError(400, 'invalid_address', 'Use a mainnet '+('Bitcoin address' if self.coin == 'btc' else 'Bitcoin Cash CashAddr')+' without a worker suffix.')
         directory = self.logs / 'users'
         if directory.is_symlink():
             raise APIError(503, 'statistics_unavailable', 'Statistics are temporarily unavailable.')
@@ -284,9 +324,15 @@ class PoolAPI:
             if not isinstance(row, dict):
                 continue
             name = row.get('workername')
-            if (isinstance(name, str) and WORKER.fullmatch(name)
-                    and (name == address or name.startswith((address + '.', address + '_')))):
-                workers.append(dict(name=name, **measurements(row)))
+            if self.coin == 'btc':
+                if (isinstance(name, str) and WORKER.fullmatch(name)
+                        and (name == address or name.startswith((address + '.', address + '_')))):
+                    workers.append(dict(name=name, **measurements(row)))
+                continue
+            identity = worker_identity(name, self.coin)
+            if identity and identity[0] == address:
+                canonical_name = address + ('.'+identity[1] if identity[1] else '')
+                workers.append(dict(name=canonical_name, **measurements(row)))
         workers.sort(key=lambda worker: worker['name'])
         presence, clients = self.presence()
         address_clients = [client for client in clients if client['address'] == address]
@@ -309,7 +355,7 @@ class PoolAPI:
         except (FileNotFoundError, APIError):
             pass
         metadata = freshness(timestamp(data.get('updatedAt')), 45)
-        available = data.get('schemaVersion') == 1 and data.get('available') is True and not metadata['stale']
+        available = data.get('schemaVersion') == 1 and data.get('available') is True and not metadata['stale'] and data.get('coin', 'btc') == self.coin
         status = 'ok' if available else 'stale' if data.get('available') is True else 'unavailable'
         if not available:
             try:
@@ -324,12 +370,12 @@ class PoolAPI:
             for row in rows:
                 if not isinstance(row, dict):
                     continue
-                identity = worker_identity(row.get('name'))
+                identity = worker_identity(row.get('name'), self.coin)
                 identifier = row.get('id')
                 if not identity or identity[0] != row.get('address') or not isinstance(identifier, str) or not re.fullmatch(r'[a-f0-9]{24}', identifier):
                     continue
                 rates = row.get('hashrateHps') if isinstance(row.get('hashrateHps'), dict) else {}
-                clients.append(dict(id=identifier, address=identity[0], name=row['name'], worker=identity[1],
+                clients.append(dict(id=identifier, address=identity[0], name=row['name'] if self.coin == 'btc' else identity[0]+('.'+identity[1] if identity[1] else ''), worker=identity[1],
                                     device=clean_device(row.get('device')), hashrateHps={period: number(rates.get(period)) for period in RATES},
                                     bestShare=number(row.get('bestShare')), connectedAt=timestamp(row.get('connectedAt')),
                                     lastShareAt=timestamp(row.get('lastShareAt'))))
@@ -345,7 +391,8 @@ class PoolAPI:
             item = {key: value for key, value in client.items() if key not in ('address', 'name')}
             item['addressMasked'] = client['address'][:6]+'…'+client['address'][-4:]
             if item['worker']:
-                item['worker'] = ADDRESS.sub(lambda match: match[0][:6]+'…'+match[0][-4:], item['worker'])
+                pattern = BCH_ADDRESS if self.coin == 'bch' else ADDRESS
+                item['worker'] = pattern.sub(lambda match: match[0][:6]+'…'+match[0][-4:], item['worker'])
             public.append(item)
         public.sort(key=lambda client: client['id'])
         return dict(apiVersion='1', **metadata, total=len(public) if metadata['available'] else None,
@@ -364,6 +411,14 @@ class PoolAPI:
         if not path.startswith(prefix):
             raise APIError(404, 'not_found', 'Endpoint not found.')
         route = path[len(prefix):]
+        if self.coin == 'btc' and route.startswith('coins/'):
+            parts = route.split('/', 2)
+            if len(parts) != 3 or parts[1] != 'bch':
+                raise APIError(404, 'not_found', 'Unknown coin or endpoint.')
+            if 'bch' not in self.coins:
+                raise APIError(503, 'coin_not_configured', 'Bitcoin Cash is not configured on this server.')
+            result = self.coins['bch'].dispatch(prefix+parts[2]+('?' + url.query if url.query else ''))
+            return dict(result, coin='bch')
         paginated = route == 'online' or re.fullmatch(r'miners/[^/]+/workers', route)
         if query and not paginated:
             raise APIError(400, 'invalid_query', 'This endpoint does not accept query parameters.')
@@ -377,6 +432,8 @@ class PoolAPI:
             return self.online(limit, offset)
         if route == 'health':
             return dict(apiVersion='1', status='ok')
+        if route == 'coins':
+            return dict(apiVersion='1', coins=[dict(id='btc', configured=True), dict(id='bch', configured='bch' in self.coins)])
         if route == 'pool':
             return self.pool()
         if route == 'history':
@@ -390,6 +447,7 @@ class PoolAPI:
             return specification
         parts = route.split('/')
         if len(parts) in (2, 3, 4) and parts[0] == 'miners' and (len(parts) == 2 or parts[2] == 'workers'):
+            parts[1] = canonical_address(parts[1], self.coin) or parts[1]
             miner, workers = self.miner(parts[1])
             if len(parts) == 2:
                 return miner
@@ -397,7 +455,7 @@ class PoolAPI:
                 return dict(apiVersion='1', address=parts[1], updatedAt=miner['updatedAt'], stale=miner['stale'],
                             total=len(workers), limit=limit, offset=offset, workers=workers[offset:offset+limit])
             name = parts[3]
-            if not WORKER.fullmatch(name):
+            if not WORKER.fullmatch(name) and not (self.coin == 'bch' and worker_identity(name, 'bch')):
                 raise APIError(400, 'invalid_worker', 'Invalid worker name.')
             matches = [w for w in workers if w['name'] == name or w['name'] in (parts[1]+'.'+name, parts[1]+'_'+name)]
             if len(matches) != 1:

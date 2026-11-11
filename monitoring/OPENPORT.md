@@ -1,5 +1,10 @@
 # Essai d’OpenPort.pw
 
+Pour ajouter uniquement le relais **Bitcoin Cash**, sans réinstaller ni relancer
+les trois relais existants, suivre [l’installation BCH](../bch/README.md#réserver-le-vrai-accès-stratum-bch) :
+`python3 /home/bdl/bdl-pool-site/bch/relay.py install` dans la VM, sous `bdl`.
+Le profil `bch` utilise le port local 3334, une identité et une unité dédiées.
+
 Service choisi : [openport.pw](https://openport.pw/). Chaque identité possède un
 port public. Les profils V1 et V2 sont séparés ; leurs identifiants restent dans
 `~/.local/state/bdl-pool-openport/` (dossiers 700, fichiers d’identité 600).

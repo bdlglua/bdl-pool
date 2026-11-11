@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "BDL Pool API",
-    "version": "1.1.0",
-    "description": "Public, read-only pool and per-address CKPool statistics. Global snapshots update every five minutes; miner records follow CKPool. Check updatedAt/stale. HTTP 404 is expected until the first share has been recorded. Hashrates are H/s. No directory of miner addresses is exposed. Live authorised connections are collected every 15 seconds. Presence older than 45 seconds is unavailable. The online list masks addresses and removes address prefixes from worker names; per-address results use the supplied address. Devices are based on self-reported Stratum user-agents, with unknown models left null."
+    "version": "1.2.0",
+    "description": "Public, read-only pool and per-address CKPool statistics. Global snapshots update every five minutes; miner records follow CKPool. Check updatedAt/stale. HTTP 404 is expected until the first share has been recorded. Hashrates are H/s. No directory of miner addresses is exposed. Live authorised connections are collected every 15 seconds. Presence older than 45 seconds is unavailable. The online list masks addresses and removes address prefixes from worker names; per-address results use the supplied address. Devices are based on self-reported Stratum user-agents, with unknown models left null. Bitcoin Cash routes use /api/v1/coins/bch with independent BCHN/CashStratum sources, checksummed mainnet CashAddr, and coin=bch in responses. BCH without a server profile returns 503. Legacy routes remain Bitcoin-only. checks.bitcoin retains its historic field name within the selected coin. Stratum V2 is BTC-only."
   },
   "servers": [
     {
@@ -469,6 +469,531 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Online"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint, address or worker not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Statistics unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/coins": {
+      "get": {
+        "summary": "Configured mining networks",
+        "operationId": "getCoins",
+        "responses": {
+          "200": {
+            "description": "Configured BTC and BCH networks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "apiVersion": {
+                      "const": "1"
+                    },
+                    "coins": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "enum": [
+                              "btc",
+                              "bch"
+                            ]
+                          },
+                          "configured": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "configured"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "apiVersion",
+                    "coins"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/coins/bch/health": {
+      "get": {
+        "summary": "Bitcoin Cash: API process health (not mining availability)",
+        "operationId": "getHealthBCH",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Public measurements; unknown numbers are null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BCHHealth"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint, address or worker not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Statistics unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/coins/bch/pool": {
+      "get": {
+        "summary": "Bitcoin Cash: Global pool and BCH snapshot",
+        "operationId": "getPoolBCH",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Public measurements; unknown numbers are null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BCHPool"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint, address or worker not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Statistics unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/coins/bch/history": {
+      "get": {
+        "summary": "Bitcoin Cash: Available hashrate history",
+        "operationId": "getHistoryBCH",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Public measurements; unknown numbers are null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BCHHistory"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint, address or worker not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Statistics unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/coins/bch/stratum": {
+      "get": {
+        "summary": "Bitcoin Cash: Public Stratum connection parameters",
+        "operationId": "getStratumBCH",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Public measurements; unknown numbers are null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BCHStratum"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint, address or worker not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Statistics unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/coins/bch/miners/{address}": {
+      "get": {
+        "summary": "Bitcoin Cash: Statistics for one BCH address",
+        "operationId": "getMinerBCH",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "description": "BCH mainnet 160-bit CashAddr (P2PKH/P2SH), with checksum validation. Full or bare, uniformly lower/upper case; normalised to bitcoincash:lowercase. No legacy BTC addresses.",
+            "schema": {
+              "type": "string",
+              "maxLength": 90
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public measurements; unknown numbers are null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BCHMiner"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint, address or worker not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Statistics unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/coins/bch/miners/{address}/workers": {
+      "get": {
+        "summary": "Bitcoin Cash: Paginated workers for one address",
+        "operationId": "getWorkersBCH",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "description": "BCH mainnet 160-bit CashAddr (P2PKH/P2SH), with checksum validation. Full or bare, uniformly lower/upper case; normalised to bitcoincash:lowercase. No legacy BTC addresses.",
+            "schema": {
+              "type": "string",
+              "maxLength": 90
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 999999,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public measurements; unknown numbers are null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BCHWorkers"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint, address or worker not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Statistics unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/coins/bch/miners/{address}/workers/{worker}": {
+      "get": {
+        "summary": "Bitcoin Cash: Statistics for one worker",
+        "operationId": "getWorkerResultBCH",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "description": "BCH mainnet 160-bit CashAddr (P2PKH/P2SH), with checksum validation. Full or bare, uniformly lower/upper case; normalised to bitcoincash:lowercase. No legacy BTC addresses.",
+            "schema": {
+              "type": "string",
+              "maxLength": 90
+            }
+          },
+          {
+            "name": "worker",
+            "in": "path",
+            "required": true,
+            "description": "Full worker name, or an unambiguous suffix after . or _.",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public measurements; unknown numbers are null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BCHWorkerResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint, address or worker not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Statistics unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/coins/bch/online": {
+      "get": {
+        "summary": "Bitcoin Cash: Current authorised Stratum connections with masked BCH addresses",
+        "description": "One row per connection. Fresh CKPool clients data is required; stale or unavailable presence returns available=false, total=null and no rows. Hardware models are only reported when advertised in the Stratum user-agent. No raw user-agent, client IP or full wallet address is exposed.",
+        "operationId": "getOnlineMinersBCH",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 999999,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public measurements; unknown numbers are null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BCHOnline"
                 }
               }
             }
@@ -1405,6 +1930,652 @@
           "limit",
           "offset",
           "miners"
+        ],
+        "additionalProperties": false
+      },
+      "BCHHealth": {
+        "type": "object",
+        "properties": {
+          "apiVersion": {
+            "type": "string",
+            "const": "1"
+          },
+          "status": {
+            "const": "ok"
+          },
+          "coin": {
+            "const": "bch"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "status",
+          "coin"
+        ],
+        "additionalProperties": false
+      },
+      "BCHPool": {
+        "type": "object",
+        "properties": {
+          "apiVersion": {
+            "type": "string",
+            "const": "1"
+          },
+          "source": {
+            "enum": [
+              "snapshot",
+              "live"
+            ]
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "ageSeconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "pool": {
+            "type": "object",
+            "properties": {
+              "hashrateHps": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "workers": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "bestShare": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "blocksFound": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "readyAtLastCheck": {
+                "type": "boolean",
+                "description": "Fresh monitoring confirmed a Stratum V1 job at the last check. This is not a live V2 check."
+              }
+            },
+            "required": [
+              "hashrateHps",
+              "workers",
+              "bestShare",
+              "blocksFound",
+              "readyAtLastCheck"
+            ],
+            "additionalProperties": false
+          },
+          "node": {
+            "type": "object",
+            "properties": {
+              "blocks": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "headers": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "chain": {
+                "enum": [
+                  "main",
+                  "test",
+                  "testnet4",
+                  "signet",
+                  "regtest",
+                  null
+                ]
+              },
+              "verificationProgress": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 1
+              },
+              "initialBlockDownload": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "updatedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "ageSeconds": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "stale": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "blocks",
+              "headers",
+              "chain",
+              "verificationProgress",
+              "initialBlockDownload",
+              "updatedAt",
+              "ageSeconds",
+              "stale"
+            ],
+            "additionalProperties": false
+          },
+          "checks": {
+            "type": "object",
+            "properties": {
+              "bitcoin": {
+                "type": "string"
+              },
+              "poolStats": {
+                "type": "string"
+              },
+              "stratum": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "bitcoin",
+              "poolStats",
+              "stratum"
+            ],
+            "additionalProperties": false
+          },
+          "coin": {
+            "const": "bch"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "source",
+          "updatedAt",
+          "ageSeconds",
+          "stale",
+          "pool",
+          "node",
+          "checks",
+          "coin"
+        ],
+        "additionalProperties": false
+      },
+      "BCHHistory": {
+        "type": "object",
+        "properties": {
+          "apiVersion": {
+            "type": "string",
+            "const": "1"
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "points": {
+            "type": "array",
+            "maxItems": 288,
+            "items": {
+              "type": "object",
+              "properties": {
+                "time": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "hashrateHps": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "time",
+                "hashrateHps"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "coin": {
+            "const": "bch"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "updatedAt",
+          "points",
+          "coin"
+        ],
+        "additionalProperties": false
+      },
+      "BCHStratum": {
+        "type": "object",
+        "properties": {
+          "apiVersion": {
+            "type": "string",
+            "const": "1"
+          },
+          "v1": {
+            "type": "object",
+            "properties": {
+              "host": {
+                "type": "string"
+              },
+              "port": {
+                "type": "integer"
+              },
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "host",
+              "port",
+              "url"
+            ],
+            "additionalProperties": false
+          },
+          "v2": {
+            "type": "object",
+            "properties": {
+              "configured": {
+                "const": false
+              },
+              "host": {
+                "type": "null"
+              },
+              "port": {
+                "type": "null"
+              },
+              "authorityPublicKey": {
+                "type": "null"
+              },
+              "url": {
+                "type": "null"
+              },
+              "availability": {
+                "const": "not_verified"
+              }
+            },
+            "required": [
+              "configured",
+              "host",
+              "port",
+              "authorityPublicKey",
+              "url",
+              "availability"
+            ],
+            "additionalProperties": false
+          },
+          "coin": {
+            "const": "bch"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "v1",
+          "v2",
+          "coin"
+        ],
+        "additionalProperties": false
+      },
+      "BCHMiner": {
+        "type": "object",
+        "properties": {
+          "apiVersion": {
+            "type": "string",
+            "const": "1"
+          },
+          "address": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "ageSeconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "workersActive": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "workersRecorded": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "hashrateHps": {
+            "type": "object",
+            "properties": {
+              "1m": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "5m": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "1h": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "1d": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "7d": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              }
+            },
+            "required": [
+              "1m",
+              "5m",
+              "1h",
+              "1d",
+              "7d"
+            ],
+            "additionalProperties": false
+          },
+          "shares": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "bestShare": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "bestEver": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "lastShareAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "connections": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "presenceAvailable": {
+            "type": "boolean"
+          },
+          "presenceUpdatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "coin": {
+            "const": "bch"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "address",
+          "updatedAt",
+          "ageSeconds",
+          "stale",
+          "workersActive",
+          "workersRecorded",
+          "hashrateHps",
+          "shares",
+          "bestShare",
+          "bestEver",
+          "lastShareAt",
+          "connections",
+          "presenceAvailable",
+          "presenceUpdatedAt",
+          "coin"
+        ],
+        "additionalProperties": false
+      },
+      "BCHWorkers": {
+        "type": "object",
+        "properties": {
+          "apiVersion": {
+            "type": "string",
+            "const": "1"
+          },
+          "address": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "workers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Worker"
+            }
+          },
+          "coin": {
+            "const": "bch"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "address",
+          "updatedAt",
+          "stale",
+          "total",
+          "limit",
+          "offset",
+          "workers",
+          "coin"
+        ],
+        "additionalProperties": false
+      },
+      "BCHWorkerResult": {
+        "type": "object",
+        "properties": {
+          "apiVersion": {
+            "type": "string",
+            "const": "1"
+          },
+          "address": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "worker": {
+            "$ref": "#/components/schemas/Worker"
+          },
+          "coin": {
+            "const": "bch"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "address",
+          "updatedAt",
+          "stale",
+          "worker",
+          "coin"
+        ],
+        "additionalProperties": false
+      },
+      "BCHOnline": {
+        "type": "object",
+        "properties": {
+          "apiVersion": {
+            "const": "1"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "syncing",
+              "stale",
+              "unavailable"
+            ]
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "checkedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "stale": {
+            "type": "boolean"
+          },
+          "total": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "miners": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnlineMiner"
+            }
+          },
+          "coin": {
+            "const": "bch"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "available",
+          "status",
+          "updatedAt",
+          "checkedAt",
+          "stale",
+          "total",
+          "limit",
+          "offset",
+          "miners",
+          "coin"
         ],
         "additionalProperties": false
       }

@@ -57,12 +57,12 @@ def filtered_node(data):
                 verificationProgress=progress, initialBlockDownload=syncing)
 
 
-def node_info(cli):
+def node_info(cli, cli_args=()):
     empty = dict(chain=None, blocks=None, headers=None,
                  verificationProgress=None, initialBlockDownload=None, updatedAt=None)
     for attempt in range(2):
         try:
-            result = subprocess.run([cli, '-rpcclienttimeout=30', 'getblockchaininfo'],
+            result = subprocess.run([cli, *cli_args, '-rpcclienttimeout=30', 'getblockchaininfo'],
                                     capture_output=True, text=True, timeout=35, check=True)
             data = json.loads(result.stdout)
             node = filtered_node(dict(chain=data.get('chain'), blocks=data.get('blocks'),
@@ -275,8 +275,30 @@ def main():
     parser.add_argument('--previous')
     parser.add_argument('--stratum-host', default='192.168.1.2')
     parser.add_argument('--stratum-port', type=int, default=3333)
+    parser.add_argument('--profile', type=Path, help='Private local BCH monitoring profile')
+    parser.add_argument('--coin', choices=('btc', 'bch'), default='btc')
     args = parser.parse_args()
-    node, bitcoin = node_info(args.bitcoin_cli)
+    cli_args = []
+    if args.profile:
+        profile = json.loads(args.profile.read_text())
+        if profile.get('coin') != 'bch':
+            parser.error('The BCH profile must declare coin=bch')
+        args.coin = 'bch'
+        args.bitcoin_cli = profile['bitcoinCli']
+        cli_args = profile.get('cliArgs', [])
+        if not isinstance(cli_args, list) or any(not isinstance(value, str) for value in cli_args):
+            parser.error('Invalid CLI arguments')
+        args.config = profile['config']
+        args.pool_status = profile['poolStatus']
+        args.stratum_host = profile.get('stratumHost', '127.0.0.1')
+        args.stratum_port = profile['stratumPort']
+    if args.previous:
+        try:
+            if json.loads(Path(args.previous).read_text()).get('coin', 'btc') != args.coin:
+                parser.error('Previous snapshot belongs to another network')
+        except (OSError, ValueError):
+            pass
+    node, bitcoin = node_info(args.bitcoin_cli, cli_args) if cli_args else node_info(args.bitcoin_cli)
     now = time.time()
     if bitcoin != 'ok':
         retained = previous_node(args.previous, now)
@@ -290,7 +312,7 @@ def main():
     history = history_from(args.previous, now) if args.previous else []
     if pool['hashrateHps'] is not None:
         history.append(dict(time=timestamp, hashrateHps=pool['hashrateHps']))
-    result = dict(schemaVersion=1, source='snapshot', updatedAt=timestamp,
+    result = dict(schemaVersion=1, coin=args.coin, source='snapshot', updatedAt=timestamp,
                   node=node, pool=pool, history=history[-288:],
                   checks=dict(bitcoin=bitcoin, poolStats=statistics, stratum=stratum))
     print(json.dumps(result, indent=2, allow_nan=False))

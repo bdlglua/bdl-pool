@@ -9,9 +9,13 @@
   Object.assign(translations, {"Vérifiez le protocole pris en charge par le firmware de votre mineur.": "Check which protocol your miner’s firmware supports.", "Stratum V2 n’est pas encore activé. Utilisez Stratum V1 pour le moment.": "Stratum V2 is not enabled yet. Use Stratum V1 for now.", "Stratum V2 : utilisez l’URL complète, clé publique incluse, avec un mineur compatible.": "Stratum V2: use the complete URL, including the public key, with a compatible miner.", "Le nœud est synchronisé. Vérifiez la réception de travail Stratum V2 dans votre mineur.": "The node is synced. Check that your miner receives Stratum V2 jobs.", "SERVEUR STRATUM V1": "STRATUM V1 SERVER", "Non activé": "Not enabled", "Copier l’URL Stratum": "Copy the Stratum URL", "Non utilisé": "Unused", "Protocole : ": "Protocol: ", "URL Stratum : ": "Stratum URL: ", "Port : ": "Port: ", "Mot de passe : ": "Password: "});
   Object.assign(translations, {"Renseignez les champs séparés de votre mineur ou copiez l’URL complète.": "Fill in your miner’s separate fields or copy the full URL.", "Adresse : ": "Address: ", "Clé publique de chiffrement : ": "Public encryption key: "});
   Object.assign(translations, {"Stratum V2 non activé.": "Stratum V2 is not enabled.", "État du pool non confirmé.": "Pool status unconfirmed.", "Bitcoin en synchronisation.": "Bitcoin is syncing.", "Connexion Stratum V2 à vérifier sur le mineur.": "Check the Stratum V2 connection on your miner.", "Travail Stratum V1 reçu au dernier contrôle.": "Stratum V1 jobs received at the last check.", "Connexion Stratum V1 à vérifier.": "Stratum V1 connection unconfirmed.", "Suivi indisponible.": "Monitoring unavailable.", "Relevé du nœud indisponible.": "Node reading unavailable.", "Relevé manuel. État actuel non confirmé.": "Manual reading. Current status unconfirmed.", "Synchronisation terminée.": "Sync complete.", "BDLPool démarrera après la synchronisation.": "BDLPool will start after syncing.", "État actuel non confirmé par le suivi.": "Current status is not confirmed by monitoring.", "Du travail Stratum V1 a été reçu au dernier contrôle.": "Stratum V1 jobs were received at the last check.", "Le nœud est synchronisé. La connexion Stratum reste à vérifier.": "The node is synced. The Stratum connection still needs checking.", "Bitcoin est en synchronisation. BDLPool démarrera ensuite.": "Bitcoin is syncing. BDLPool will start afterwards.", "Stratum V1 répond. Aucun travail reçu au dernier contrôle.": "Stratum V1 responds. No jobs received at the last check."});
-  const t = (text) => english ? (translations[text] || text) : text;
+  const bch = window.BDL_POOL_ACTIVE?.coin === "bch";
+  const t = (text) => {
+    const translated = english ? (translations[text] || text) : text;
+    return bch ? translated.replace(/Bitcoin Core/g, "BCHN").replace(/Bitcoin(?! Cash)/g, "Bitcoin Cash").replace(/\bBTC\b/g, "BCH") : translated;
+  };
   const locale = english ? "en-GB" : "fr-FR";
-  const config = window.BDL_POOL_CONFIG || {};
+  const config = window.BDL_POOL_ACTIVE?.config || window.BDL_POOL_CONFIG || {};
   const $ = (id) => document.getElementById(id);
   function setText(id, value) { const element = $(id); if (element) element.textContent = value; }
   function refreshState(busy) {
@@ -20,7 +24,7 @@
   }
   const number = new Intl.NumberFormat(locale);
   const compact = new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 2 });
-  let protocol = new URLSearchParams(location.search).get("protocol") === "v2" ? "v2" : "v1";
+  let protocol = !bch && new URLSearchParams(location.search).get("protocol") === "v2" ? "v2" : "v1";
   let settings = null;
   let toastTimer;
   let loading = false;
@@ -114,11 +118,11 @@
     return config.sv2?.enabled === true && /^[1-9A-HJ-NP-Za-km-z]{40,70}$/.test(String(config.sv2.authorityPublicKey || ""));
   }
   function currentPort() {
-    return protocol === "v2" ? (config.sv2?.publicPort || 3336) : (config.publicPort || 3333);
+    return protocol === "v2" ? (config.sv2?.publicPort || 3336) : (config.publicPort || (bch ? null : 3333));
   }
   function currentUrl() {
     const host = currentHost();
-    if (!host || (protocol === "v2" && !sv2Configured())) return "";
+    if (!host || !currentPort() || (protocol === "v2" && !sv2Configured())) return "";
     return protocol === "v2"
       ? "stratum2+tcp://" + host + ":" + currentPort() + "/" + config.sv2.authorityPublicKey
       : "stratum+tcp://" + host + ":" + currentPort();
@@ -129,7 +133,7 @@
     const v2 = protocol === "v2";
     const inactive = v2 && !sv2Configured();
     setText("endpoint-host", inactive ? t("Non activé") : host || t("Non configuré"));
-    setText("endpoint-port", inactive ? "—" : currentPort());
+    setText("endpoint-port", inactive ? "—" : currentPort() || "—");
     $("endpoint-key-row").hidden = !v2;
     setText("endpoint-key", v2 && !inactive ? config.sv2.authorityPublicKey : "—");
     $("copy-host").disabled = !host || inactive;
@@ -140,6 +144,7 @@
     $("protocol-note").hidden = !inactive;
     setText("protocol-note", inactive ? t("Stratum V2 non activé.") : "");
     let availability = t("État du pool non confirmé.");
+    if (bch && !host) availability = english ? "BCH endpoint not configured yet." : "Serveur BCH pas encore configuré.";
     if (nodeCurrent && !statusFailed && !statusStale) {
       if (statusData?.node?.initialBlockDownload) availability = t("Bitcoin en synchronisation.");
       else if (v2) availability = t("Connexion Stratum V2 à vérifier sur le mineur.");
@@ -285,6 +290,7 @@
     loading = true;
     refreshState(true);
     try {
+      if (bch && !config.statusUrl) throw new Error("BCH status not configured");
       const url = new URL(config.statusUrl || "/data/status.json", document.baseURI);
       // Give each minute its own public raw-file cache entry. Manual refresh
       // requests a new entry immediately without requiring a site deployment.
@@ -296,6 +302,7 @@
       if (!response.ok) throw new Error("Status unavailable");
       const data = await response.json();
       if (data.schemaVersion !== 1 || !data.node || !data.pool || !["manual", "live", "snapshot"].includes(data.source)) throw new Error("Invalid status schema");
+      if ((data.coin || "btc") !== (bch ? "bch" : "btc")) throw new Error("Wrong network snapshot");
       statusData = data;
       statusFailed = false;
       latestPoll = Date.now();
@@ -342,15 +349,14 @@
     const host = currentHost();
     const enteredAddress = $("btc-address").value.trim();
     // Bech32 also permits a fully uppercase spelling, but never mixed case.
-    const address = enteredAddress.startsWith("BC1") && enteredAddress === enteredAddress.toUpperCase()
-      ? enteredAddress.toLowerCase() : enteredAddress;
+    const address = window.BDL_POOL_ACTIVE.address(enteredAddress);
     const worker = $("worker-name").value.trim();
     // Contrôle du format uniquement ; ce formulaire ne valide pas la somme de contrôle.
     const addressFormat = /^(?:[13][1-9A-HJ-NP-Za-km-z]{25,34}|bc1[ac-hj-np-z02-9]{11,87})$/;
     let error = "", focus = "btc-address";
     if (protocol === "v2" && !sv2Configured()) error = t("Stratum V2 n’est pas encore activé. Utilisez Stratum V1 pour le moment.");
     else if (!host) error = t("L’adresse de connexion n’est pas encore configurée.");
-    else if (!addressFormat.test(address)) error = t("Vérifiez le format de votre adresse Bitcoin BTC : bc1…, 1… ou 3….");
+    else if (!address) error = bch ? (english ? "Check your Bitcoin Cash mainnet CashAddr and its checksum." : "Vérifiez votre adresse CashAddr Bitcoin Cash et sa somme de contrôle.") : t("Vérifiez le format de votre adresse Bitcoin BTC : bc1…, 1… ou 3….");
     else if (worker && !/^[a-zA-Z0-9_-]{1,32}$/.test(worker)) { error = t("Nom du mineur : 32 caractères maximum, lettres, chiffres, tiret ou underscore."); focus = "worker-name"; }
     if (error) {
       setText("form-error", error);
@@ -393,5 +399,15 @@
     renderStatus();
   }
   renderEndpoint();
+  if (bch && $("endpoint-host") && config.apiBaseUrl) {
+    fetch(config.apiBaseUrl + "/stratum", {credentials: "omit", cache: "no-store", signal: AbortSignal.timeout(8000)})
+      .then(response => { if (!response.ok) throw new Error("BCH endpoint unavailable"); return response.json(); })
+      .then(data => {
+        if (data.apiVersion !== "1" || data.coin !== "bch" || !/^[a-z0-9][a-z0-9.-]*$/.test(data.v1?.host || "") || !Number.isInteger(data.v1?.port) || data.v1.port < 1 || data.v1.port > 65535) return;
+        config.publicHost = data.v1.host;
+        config.publicPort = data.v1.port;
+        renderEndpoint();
+      }).catch(() => {});
+  }
   loadStatus();
 })();

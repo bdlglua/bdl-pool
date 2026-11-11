@@ -20,6 +20,14 @@ export function PoolPage({
         {lang === "en" ? "Skip to content" : "Aller au contenu"}
       </a>
       <Header lang={lang} page={page} />
+      <div className="coin-bar wrap">
+        <label htmlFor="pool-coin">{lang === "en" ? "Mining network" : "Réseau de minage"}</label>
+        <select id="pool-coin" defaultValue="btc">
+          <option value="btc">Bitcoin (BTC)</option>
+          <option value="bch">Bitcoin Cash (BCH)</option>
+        </select>
+        <span id="coin-description">{lang === "en" ? "Solo mining · SHA-256" : "Minage solo · SHA-256"}</span>
+      </div>
       <main
         id="main"
         className={page === "api" ? "api-docs wrap category-page" : undefined}

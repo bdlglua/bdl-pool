@@ -18,6 +18,35 @@ spec.loader.exec_module(collect)
 
 
 class CollectorTests(unittest.TestCase):
+    def test_bch_profile_uses_separate_cli_datadir_logs_and_network_marker(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            profile = root/'monitor.json'
+            profile.write_text(json.dumps(dict(coin='bch', bitcoinCli='/opt/bchn/bitcoin-cli',
+                cliArgs=['-datadir=/srv/bch/node'], config='/srv/bch/cashstratum.conf',
+                poolStatus='/srv/bch/logs/pool/pool.status', stratumPort=3334)))
+            node = dict(chain='main', blocks=123, headers=123, verificationProgress=1, initialBlockDownload=False)
+            pool = dict(ready=False, hashrateHps=12, workers=1, bestShare=1, blocksFound=None)
+            with patch.object(sys, 'argv', ['collect.py', '--profile', str(profile)]), \
+                    patch.object(collect, 'node_info', return_value=(node, 'ok')) as rpc, \
+                    patch.object(collect, 'pool_info', return_value=(pool, 'ok')) as stats, \
+                    patch.object(collect, 'stratum_check', return_value='job_received') as probe, \
+                    contextlib.redirect_stdout(io.StringIO()) as output, contextlib.redirect_stderr(io.StringIO()):
+                collect.main()
+            rpc.assert_called_once_with('/opt/bchn/bitcoin-cli', ['-datadir=/srv/bch/node'])
+            stats.assert_called_once()
+            self.assertEqual(stats.call_args.args[0], Path('/srv/bch/logs/pool/pool.status'))
+            probe.assert_called_once_with('127.0.0.1', 3334)
+            snapshot = json.loads(output.getvalue())
+            self.assertEqual(snapshot['coin'], 'bch')
+            self.assertTrue(snapshot['pool']['ready'])
+            previous = root/'previous.json'
+            previous.write_text(json.dumps(dict(snapshot, coin='btc')))
+            with patch.object(sys, 'argv', ['collect.py', '--profile', str(profile), '--previous', str(previous)]), \
+                    patch.object(collect, 'node_info') as rpc, contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                collect.main()
+            rpc.assert_not_called()
+
     def test_ckpool_multiline_json_filtering_units_and_stale_data(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / 'pool.status'

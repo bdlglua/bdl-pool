@@ -46,12 +46,12 @@ def clients_from_socket(path):
     return clients
 
 
-def filter_clients(clients, salt):
+def filter_clients(clients, salt, coin='btc'):
     result = []
     for client in clients:
         if not isinstance(client, dict) or client.get('authorised') is not True:
             continue
-        identity = worker_identity(client.get('workername'))
+        identity = worker_identity(client.get('workername'), coin)
         identifier = number(client.get('id'), True)
         if not identity or identifier is None:
             continue
@@ -83,15 +83,15 @@ def publish(path, data):
         Path(filename).unlink(missing_ok=True)
 
 
-def collect(socket_path, output, salt, last_success=None):
+def collect(socket_path, output, salt, last_success=None, coin='btc'):
     now = epoch(time.time())
     try:
-        clients = filter_clients(clients_from_socket(socket_path), salt)
-        data = dict(schemaVersion=1, checkedAt=now, updatedAt=now, available=True, clients=clients)
+        clients = filter_clients(clients_from_socket(socket_path), salt, coin)
+        data = dict(schemaVersion=1, coin=coin, checkedAt=now, updatedAt=now, available=True, clients=clients)
         publish(output, data)
         return now
     except (OSError, ValueError, TypeError, OverflowError):
-        publish(output, dict(schemaVersion=1, checkedAt=now, updatedAt=last_success, available=False, clients=[]))
+        publish(output, dict(schemaVersion=1, coin=coin, checkedAt=now, updatedAt=last_success, available=False, clients=[]))
         return last_success
 
 
@@ -101,11 +101,15 @@ def main():
     parser.add_argument('--once', action='store_true')
     args = parser.parse_args()
     config = json.loads(args.config.read_text())
-    output = Path(config.get('onlineSnapshot', '/var/lib/bdl-pool-presence/online.json'))
-    socket_path = Path(config.get('ckpoolSocket', '/run/ckpool/stratifier'))
-    salt, last_success = secrets.token_bytes(32), None
+    profiles = [('btc', config)]
+    if isinstance(config.get('coins'), dict) and 'bch' in config['coins']:
+        profiles.append(('bch', config['coins']['bch']))
+    salt, successes = secrets.token_bytes(32), {}
     while True:
-        last_success = collect(socket_path, output, salt, last_success)
+        for coin, profile in profiles:
+            output = Path(profile.get('onlineSnapshot', '/var/lib/bdl-pool-presence/online.json'))
+            socket_path = Path(profile.get('ckpoolSocket', '/run/ckpool/stratifier'))
+            successes[coin] = collect(socket_path, output, salt, successes.get(coin), coin)
         if args.once:
             break
         time.sleep(15)

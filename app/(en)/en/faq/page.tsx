@@ -27,7 +27,7 @@ export default function Page() {
               {"Can I connect over the Internet?"}
               <span>{"+"}</span>
             </summary>
-            <p>
+            <p id="faq-connection">
               {
                 "Yes. Use stratum.bdl-pool.com: port 39991 for V1 or 36809 for V2."
               }
