@@ -47,7 +47,7 @@ func run() error {
 	}
 
 	var health healthResponse
-	decoder := json.NewDecoder(response.Body)
+	decoder := json.NewDecoder(io.LimitReader(response.Body, 1<<16))
 	if err := decoder.Decode(&health); err != nil {
 		return fmt.Errorf("decode health response: %w", err)
 	}

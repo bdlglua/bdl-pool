@@ -22,11 +22,20 @@ fi
 [[ -z "$(git -C "$stats_repo" status --porcelain)" ]] || { echo 'Modifications locales dans le dossier de statistiques. Vérifiez-les avant de réessayer.' >&2; exit 1; }
 git -C "$stats_repo" pull --ff-only origin stats
 scratch="$(mktemp "$state_dir/status.XXXXXX")"
-trap 'rm -f -- "$scratch"' EXIT
+pending=false
+cleanup() {
+  rm -f -- "$scratch"
+  # An interrupted run must not leave an uncommitted snapshot behind: every
+  # later run would stop at the local-modification check above.
+  if "$pending"; then git -C "$stats_repo" checkout -q HEAD -- status.json || true; fi
+}
+trap cleanup EXIT
 python3 "$script_dir/collect.py" --previous "$stats_repo/status.json" > "$scratch"
+pending=true
 cp "$scratch" "$stats_repo/status.json"
 # Never git add a directory, configuration, log, wallet, or authentication file.
 git -C "$stats_repo" add -- status.json
 git -C "$stats_repo" -c user.name='BDL Pool monitoring' -c user.email='86241016+bdlglua@users.noreply.github.com' commit -m 'Update public pool snapshot'
+pending=false
 git -C "$stats_repo" push origin HEAD:stats
 echo 'Relevé publié sur GitHub.'

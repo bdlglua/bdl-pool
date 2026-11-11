@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { replyWithPool } from "../dist/pool.js";
+import { isPoolSnapshot, replyWithPool } from "../dist/pool.js";
 
 test("an expired Discord interaction does not escape the command handler", async () => {
   const errors = [];
@@ -35,4 +35,23 @@ test("a valid pool response still produces a status embed", async (t) => {
   await replyWithPool({async deferReply() {},async editReply(value) { replies.push(value); }});
   assert.equal(replies.length, 1);
   assert.equal(replies[0].embeds[0].toJSON().description, "Prêt au dernier contrôle");
+});
+
+test("upstream text is never relayed to Discord", async (t) => {
+  const snapshot = {
+    apiVersion:"1",updatedAt:null,ageSeconds:1,stale:false,
+    pool:{hashrateHps:1000,workers:1,bestShare:5,blocksFound:0,readyAtLastCheck:true},
+    node:{initialBlockDownload:false,stale:false},checks:{stratum:"job_received"},
+  };
+  assert.equal(isPoolSnapshot(snapshot), true);
+  for (const stratum of ["", "@everyone https://example.invalid", "x".repeat(2000)]) {
+    assert.equal(isPoolSnapshot({...snapshot, checks:{stratum}}), false);
+  }
+  t.mock.method(globalThis, "fetch", async () => new Response("<html>internal-host.example</html>", {status:200}));
+  const replies = [];
+  await replyWithPool({async deferReply() {},async editReply(value) { replies.push(value); }});
+  assert.equal(replies.length, 1);
+  assert.equal(typeof replies[0], "string");
+  assert.equal(replies[0].includes("internal-host"), false);
+  assert.equal(replies[0].includes("<html>"), false);
 });

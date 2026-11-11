@@ -91,3 +91,17 @@ func TestScrapeRejectsTrailingJSON(t *testing.T) {
         })
     }
 }
+
+func TestScrapeRejectsOversizedResponse(t *testing.T) {
+	api := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		_, _ = writer.Write([]byte(`{"apiVersion":"1","padding":"` + strings.Repeat("a", 2*maxResponseBytes) + `"}`))
+	}))
+	defer api.Close()
+	collector := newExporter(api.URL)
+	if err := collector.scrape(context.Background()); err == nil {
+		t.Fatal("accepted a pool response larger than the limit")
+	}
+	if !strings.Contains(collector.metrics(), "bdl_pool_api_up 0") {
+		t.Fatal("an oversized response must mark the API as down")
+	}
+}

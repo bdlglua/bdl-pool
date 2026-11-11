@@ -8,3 +8,5 @@ public/
 playwright-report/
 test-results/
 .env*
+api/tools/discord-bot/dist/
+target/

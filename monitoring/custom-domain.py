@@ -52,7 +52,7 @@ def run(command, label):
 def nameservers(dns):
     result = []
     for name in dns.dig(SITE_DOMAIN, 'NS'):
-        if not re.fullmatch(r'[A-Za-z0-9.-]{1,253}', name):
+        if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9.-]{0,252}', name):  # Never a dig option.
             continue
         for address in dns.dig(name, 'A'):
             try:

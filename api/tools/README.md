@@ -63,7 +63,7 @@ go run .
 
 Prometheus metrics listen on `127.0.0.1:9108` by default. Set
 `PROMETHEUS_LISTEN_ADDRESS` to change the bind address and
-`BDL_POOL_SCRAPE_SECONDS` to change the poll interval (minimum five seconds).
+`BDL_POOL_SCRAPE_SECONDS` to change the poll interval (five seconds to one day).
 A failed API scrape sets `bdl_pool_api_up` to `0`, marks the snapshot stale, and
 clears the readiness metric while retaining last-known numeric measurements.
 No address, worker name, or other miner identifier is exported.
