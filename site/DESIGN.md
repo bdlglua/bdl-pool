@@ -1,3 +1,11 @@
+# BDL Pool design status
+
+On 13 November 2026 the owner asked for the earlier "pulse" design back: dark
+navy surfaces, purple/lime accents, DM Sans, floating glass navigation, tilted
+node panel, orbit illustration and illustrated shortcuts. `assets/pulse-theme.css`,
+the home templates and the chart colours follow that design again. The
+instrument theme described below is kept for reference only and is not live.
+
 # BDL Pool / BDLMiner instrument theme
 
 The shared direction was approved on 11 November 2026: technical, precise,

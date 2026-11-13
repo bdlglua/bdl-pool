@@ -68,8 +68,13 @@ pub fn render(id: &str, points: &[(f64, Option<f64>)], gap_ms: f64) -> bool {
         .and_then(|r| r.get_attribute("data-theme"))
         .as_deref()
         != Some("light");
-    let foreground = if dark { "#999999" } else { "#666666" };
-    let grid = if dark { "#303030" } else { "#dddddd" };
+    let foreground = if dark { "#94a3b8" } else { "#5b6477" };
+    let grid = if dark {
+        "rgba(255,255,255,.07)"
+    } else {
+        "rgba(42,55,88,.09)"
+    };
+    let series = if dark { "#00ff88" } else { "#007f55" };
     let peak = points
         .iter()
         .filter_map(|(_, v)| *v)
@@ -78,7 +83,7 @@ pub fn render(id: &str, points: &[(f64, Option<f64>)], gap_ms: f64) -> bool {
     let end = points.last().map(|p| p.0).unwrap_or(first + 1.0);
     let plot_width = width - 70.0;
     let plot_height = height - 34.0;
-    ctx.set_font("11px 'IBM Plex Mono',monospace");
+    ctx.set_font("11px 'DM Sans',sans-serif");
     ctx.set_line_width(1.0);
     for i in 0..=4 {
         let y = 10.0 + f64::from(i) * plot_height / 4.0;
@@ -94,7 +99,7 @@ pub fn render(id: &str, points: &[(f64, Option<f64>)], gap_ms: f64) -> bool {
             y + 3.0,
         );
     }
-    ctx.set_stroke_style_str("#f7931a");
+    ctx.set_stroke_style_str(series);
     ctx.set_line_width(2.0);
     ctx.begin_path();
     for group in &groups {
