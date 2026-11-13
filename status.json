@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "coin": "btc",
   "source": "snapshot",
-  "updatedAt": "2026-11-13T08:08:41Z",
+  "updatedAt": "2026-11-13T08:13:18Z",
   "node": {
     "chain": "main",
-    "blocks": 759298,
+    "blocks": 759654,
     "headers": 975644,
-    "verificationProgress": 0.5227705116510292,
+    "verificationProgress": 0.5231872350185138,
     "initialBlockDownload": true,
-    "updatedAt": "2026-11-13T08:02:56Z"
+    "updatedAt": "2026-11-13T08:13:17Z"
   },
   "pool": {
     "ready": false,
@@ -20,7 +20,7 @@
   },
   "history": [],
   "checks": {
-    "bitcoin": "stale",
+    "bitcoin": "ok",
     "poolStats": "missing",
     "stratum": "not_checked"
   }
