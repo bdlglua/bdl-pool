@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "coin": "btc",
   "source": "snapshot",
-  "updatedAt": "2026-11-15T11:04:43Z",
+  "updatedAt": "2026-11-15T11:10:20Z",
   "node": {
     "chain": "main",
-    "blocks": 837125,
-    "headers": 975948,
-    "verificationProgress": 0.6637512876537742,
+    "blocks": 837259,
+    "headers": 975950,
+    "verificationProgress": 0.663924138017173,
     "initialBlockDownload": true,
-    "updatedAt": "2026-11-15T11:04:43Z"
+    "updatedAt": "2026-11-15T11:10:19Z"
   },
   "pool": {
     "ready": false,
