@@ -141,7 +141,7 @@ fn send(
     allow_post: bool,
 ) -> io::Result<()> {
     let body = serde_json::to_vec(&response.data)?;
-    let etag = format!("\\"{:x}\\"", Sha256::digest(&body));
+    let etag = format!(r#""{:x}""#, Sha256::digest(&body));
     let cached = !allow_post
         && response.status == 200
         && request.and_then(|r| r.header("if-none-match")) == Some(etag.as_str());
