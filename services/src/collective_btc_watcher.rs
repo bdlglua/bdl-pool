@@ -1,8 +1,8 @@
 //! Bitcoin Core watcher for the separate BTC collective CKPool instance.
 //!
-//! It scans only blocks with at least 100 confirmations, verifies that the
-//! coinbase paid the configured collective address, then asks the private
-//! coordinator to create an immutable PPLNS allocation. It never signs or
+//! It captures a durable share-sequence snapshot when a pool-paid block first
+//! appears, then waits for 100 confirmations before creating its PPLNS plan.
+//! Orphaned candidates are invalidated and rescanned. It never signs or
 //! broadcasts a transaction.
 
 use crate::address;
@@ -544,9 +544,15 @@ fn poll_once(config: &WatchConfig, cursor: &mut CursorStore) -> io::Result<usize
     ) {
         let canonical_hash = block_hash_at(config, height)?;
         if canonical_hash != previous_hash {
-            return Err(io::Error::other(
-                "deep Bitcoin reorganisation detected at the saved checkpoint; watcher halted for manual review",
-            ));
+            let previous = if height == 0 {
+                None
+            } else {
+                Some(block_hash_at(config, height - 1)?)
+            };
+            cursor.rewind_to(height, previous.as_deref())?;
+            println!(
+                "Bitcoin chain reorganisation detected at height {height}; rewinding the candidate scan."
+            );
         }
     }
 
