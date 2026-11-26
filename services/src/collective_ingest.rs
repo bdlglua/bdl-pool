@@ -149,10 +149,7 @@ fn coordinator_authorize(
     participant_id: &str,
     stratum_password: &str,
 ) -> bool {
-    let response = ureq::post(&format!(
-        "{}/internal/authorize",
-        config.coordinator_base
-    ))
+    let response = ureq::post(&format!("{}/internal/authorize", config.coordinator_base))
     .timeout(Duration::from_secs(3))
     .set("Authorization", &format!("Bearer {}", config.backend_token))
     .set("Content-Type", "application/json")
@@ -415,10 +412,7 @@ fn parse_ckpool_share(value: &Value) -> Option<AcceptedShare> {
 }
 
 fn post_accepted_share(config: &IngestConfig, share: &AcceptedShare) -> io::Result<()> {
-    let result = ureq::post(&format!(
-        "{}/internal/shares",
-        config.coordinator_base
-    ))
+    let result = ureq::post(&format!("{}/internal/shares", config.coordinator_base))
     .timeout(Duration::from_secs(3))
     .set("Authorization", &format!("Bearer {}", config.backend_token))
     .set("Content-Type", "application/json")
