@@ -224,7 +224,7 @@ def run_trial(binary, mode, profile, duration):
             port = server.server_port
             print('Test du tunnel uniquement : aucune connexion de minage.', flush=True)
         else:
-            port = {'v1': 3333, 'v2': 3336, 'bch': 3334}[mode]
+            port = {'v1': 3333, 'v2': 3336, 'bch': 3334, 'collective': 3337}[mode]
             try:
                 with socket.create_connection(('127.0.0.1', port), timeout=2):
                     pass
@@ -288,8 +288,8 @@ def interrupt(*_):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('mode', nargs='?', choices=('test', 'v1', 'v2', 'bch'), default='test')
-    parser.add_argument('--profile', choices=('v1', 'v2', 'bch'), default=None)
+    parser.add_argument('mode', nargs='?', choices=('test', 'v1', 'v2', 'bch', 'collective'), default='test')
+    parser.add_argument('--profile', choices=('v1', 'v2', 'bch', 'collective'), default=None)
     parser.add_argument('--timeout', type=int, default=600)
     args = parser.parse_args()
     if not 1 <= args.timeout <= 600:
