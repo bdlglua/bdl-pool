@@ -7,17 +7,17 @@
 
 use crate::address;
 use serde_json::{json, Value};
+#[cfg(unix)]
+use std::os::{
+    fd::AsRawFd,
+    unix::fs::{OpenOptionsExt, PermissionsExt},
+};
 use std::{
     fs::{self, File, OpenOptions},
     io::{self, Write},
     path::{Path, PathBuf},
     thread,
     time::{Duration, SystemTime, UNIX_EPOCH},
-};
-#[cfg(unix)]
-use std::os::{
-    fd::AsRawFd,
-    unix::fs::{OpenOptionsExt, PermissionsExt},
 };
 use url::{Host, Url};
 
@@ -75,17 +75,16 @@ fn loopback_url(value: &str, path: &str) -> io::Result<String> {
         || url.query().is_some()
         || url.fragment().is_some()
     {
-        return Err(io::Error::other("service URL must use HTTP on loopback with the expected path"));
+        return Err(io::Error::other(
+            "service URL must use HTTP on loopback with the expected path",
+        ));
     }
     Ok(value.trim_end_matches('/').to_string())
 }
 
 impl WatchConfig {
     fn from_value(value: &Value) -> io::Result<Self> {
-        let rpc_url = loopback_url(
-            &config_string(value, "rpcUrl", 512)?,
-            "/",
-        )?;
+        let rpc_url = loopback_url(&config_string(value, "rpcUrl", 512)?, "/")?;
         let rpc_user = config_string(value, "rpcUser", 128)?;
         if rpc_user.contains(':') {
             return Err(io::Error::other("rpcUser must not contain a colon"));
@@ -100,7 +99,9 @@ impl WatchConfig {
         }
         let backend_token = config_string(value, "backendToken", 64)?;
         if !valid_secret(&backend_token) {
-            return Err(io::Error::other("backendToken must be a 32-byte lowercase hex token"));
+            return Err(io::Error::other(
+                "backendToken must be a 32-byte lowercase hex token",
+            ));
         }
         let payout_address = config_string(value, "payoutAddress", 128)?;
         let payout_address = address::canonical_coin(&payout_address, "btc")
@@ -118,7 +119,9 @@ impl WatchConfig {
         }
         let poll_secs = value["pollIntervalSeconds"].as_u64().unwrap_or(15);
         if !(5..=300).contains(&poll_secs) {
-            return Err(io::Error::other("pollIntervalSeconds must be between 5 and 300"));
+            return Err(io::Error::other(
+                "pollIntervalSeconds must be between 5 and 300",
+            ));
         }
         Ok(Self {
             rpc_url,
@@ -136,8 +139,7 @@ impl WatchConfig {
 }
 
 fn base64(bytes: &[u8]) -> String {
-    const TABLE: &[u8; 64] =
-        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut output = String::with_capacity(bytes.len().div_ceil(3) * 4);
     for chunk in bytes.chunks(3) {
         let first = chunk[0];
@@ -207,7 +209,9 @@ fn btc_to_satoshis(value: &Value) -> io::Result<u64> {
         .ok_or_else(|| io::Error::other("coinbase output contains an invalid BTC amount"))?;
     let satoshis = (btc * 100_000_000.0).round();
     if !satoshis.is_finite() || satoshis < 0.0 || satoshis > u64::MAX as f64 {
-        return Err(io::Error::other("coinbase output amount is outside the satoshi range"));
+        return Err(io::Error::other(
+            "coinbase output amount is outside the satoshi range",
+        ));
     }
     Ok(satoshis as u64)
 }
@@ -255,7 +259,11 @@ fn coinbase_reward_for_address(
         let direct = script["address"].as_str() == Some(payout_address);
         let listed = script["addresses"]
             .as_array()
-            .map(|addresses| addresses.iter().any(|address| address.as_str() == Some(payout_address)))
+            .map(|addresses| {
+                addresses
+                    .iter()
+                    .any(|address| address.as_str() == Some(payout_address))
+            })
             .unwrap_or(false);
         if direct || listed {
             found = true;
@@ -268,7 +276,9 @@ fn coinbase_reward_for_address(
         return Ok(None);
     }
     if reward_atoms == 0 {
-        return Err(io::Error::other("collective coinbase output has zero value"));
+        return Err(io::Error::other(
+            "collective coinbase output has zero value",
+        ));
     }
     Ok(Some(reward_atoms))
 }
@@ -290,16 +300,18 @@ fn post_mature_block(
             "mature":true
         }))
         .map_err(|error| match error {
-            ureq::Error::Status(status, _) => {
-                io::Error::other(format!("coordinator rejected mature block (HTTP {status}); retrying"))
-            }
+            ureq::Error::Status(status, _) => io::Error::other(format!(
+                "coordinator rejected mature block (HTTP {status}); retrying"
+            )),
             _ => io::Error::other("coordinator is unavailable; retrying mature block"),
         })?;
     let result: Value = response
         .into_json()
         .map_err(|_| io::Error::other("coordinator returned invalid block response"))?;
     if result["status"].as_str() == Some("error") {
-        return Err(io::Error::other("coordinator returned a block error; retrying"));
+        return Err(io::Error::other(
+            "coordinator returned a block error; retrying",
+        ));
     }
     Ok(())
 }
@@ -355,7 +367,9 @@ impl CursorStore {
                     || !metadata.is_file()
                     || metadata.len() > MAX_CURSOR_BYTES
                 {
-                    return Err(io::Error::other("block cursor must be a small regular file"));
+                    return Err(io::Error::other(
+                        "block cursor must be a small regular file",
+                    ));
                 }
                 let value: Value = serde_json::from_slice(&fs::read(path)?)
                     .map_err(|_| io::Error::other("block cursor JSON is invalid"))?;
@@ -410,11 +424,9 @@ impl CursorStore {
             .file_name()
             .and_then(|name| name.to_str())
             .ok_or_else(|| io::Error::other("invalid block cursor filename"))?;
-        let temporary = self.path.with_file_name(format!(
-            ".{file_name}.{}.{}.tmp",
-            std::process::id(),
-            now
-        ));
+        let temporary =
+            self.path
+                .with_file_name(format!(".{file_name}.{}.{}.tmp", std::process::id(), now));
         let mut options = OpenOptions::new();
         options.write(true).create_new(true);
         #[cfg(unix)]
@@ -452,9 +464,10 @@ impl CursorStore {
 }
 
 fn poll_once(config: &WatchConfig, cursor: &mut CursorStore) -> io::Result<usize> {
-    if let (Some(height), Some(previous_hash)) =
-        (cursor.cursor.last_height, cursor.cursor.last_hash.as_deref())
-    {
+    if let (Some(height), Some(previous_hash)) = (
+        cursor.cursor.last_height,
+        cursor.cursor.last_hash.as_deref(),
+    ) {
         let canonical_hash = block_hash_at(config, height)?;
         if canonical_hash != previous_hash {
             return Err(io::Error::other(
@@ -473,12 +486,7 @@ fn poll_once(config: &WatchConfig, cursor: &mut CursorStore) -> io::Result<usize
         let height = cursor.cursor.next_height;
         let hash = block_hash_at(config, height)?;
         let block = rpc_call(config, "getblock", json!([hash, 2]))?;
-        let reward = coinbase_reward_for_address(
-            &block,
-            &hash,
-            height,
-            &config.payout_address,
-        )?;
+        let reward = coinbase_reward_for_address(&block, &hash, height, &config.payout_address)?;
         // Check the canonical hash again after decoding the full block. Never
         // account a block whose height was replaced while it was inspected.
         if block_hash_at(config, height)? != hash {
@@ -612,6 +620,9 @@ mod tests {
         let reopened = CursorStore::open(&path, 100).unwrap();
         assert_eq!(reopened.cursor.next_height, 101);
         assert_eq!(reopened.cursor.last_height, Some(100));
-        assert_eq!(reopened.cursor.last_hash.as_deref(), Some("e".repeat(64).as_str()));
+        assert_eq!(
+            reopened.cursor.last_hash.as_deref(),
+            Some("e".repeat(64).as_str())
+        );
     }
 }
