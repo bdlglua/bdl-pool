@@ -394,6 +394,7 @@ impl Coordinator {
             ("GET", "/api/v1/collective/admin/blocks") => self.admin_blocks(request),
             ("POST", "/api/v1/collective/admin/participants") => self.create_participant(request),
             ("POST", "/api/v1/collective/admin/payout-mode") => self.change_payout_mode(request),
+            ("POST", "/api/v1/collective/internal/authorize") => self.authorize_miner(request),
             ("POST", "/api/v1/collective/internal/shares") => self.record_share(request),
             ("POST", "/api/v1/collective/internal/blocks") => self.record_block(request),
             _ => Err(CoordinatorError::new(
@@ -455,11 +456,14 @@ impl Coordinator {
             random_hex(16).map_err(|_| io_error("Unable to generate a participant identifier."))?;
         let token =
             random_hex(32).map_err(|_| io_error("Unable to generate a participant token."))?;
+        let stratum_password = random_hex(32)
+            .map_err(|_| io_error("Unable to generate a Stratum password."))?;
         let participant = json!({
             "id":id,
             "coin":coin,
             "payoutAddress":address,
             "tokenHash":sha256_hex(&token),
+            "stratumPasswordHash":sha256_hex(&stratum_password),
             "active":true,
             "createdAt":Utc::now().to_rfc3339()
         });
@@ -470,7 +474,8 @@ impl Coordinator {
         Ok(json!({
             "participant":{"id":id,"coin":coin,"payoutAddress":address,"active":true},
             "participantToken":token,
-            "warning":"The token is shown once. Store it as a secret on the miner."
+            "stratumPassword":stratum_password,
+            "warning":"Both secrets are shown once. Use participantToken only for the private dashboard API. Use stratumPassword as the Stratum V1 password; it is separate and grants mining access only."
         }))
     }
 
@@ -493,6 +498,37 @@ impl Coordinator {
                 .map_err(|_| io_error("Payout mode could not be committed."))?;
         }
         Ok(json!({"payoutMode":mode.as_str(),"paymentsEnabled":false}))
+    }
+
+    fn authorize_miner(&self, request: &Request) -> Result<Value> {
+        if !authorized(request, &self.backend_token) {
+            return Err(unauthorized());
+        }
+        let body = parse_body(request)?;
+        let participant_id = required_str(&body, "participantId", 64)?;
+        let password = required_str(&body, "stratumPassword", 64)?;
+        if !valid_id(participant_id, 64) || !valid_secret(password) {
+            return Ok(json!({"authorized":false}));
+        }
+        let password_hash = sha256_hex(password);
+        let ledger = self
+            .journal
+            .lock()
+            .map_err(|_| io_error("Ledger lock is unavailable."))?;
+        let Some(participant) = ledger.state.participants.get(participant_id) else {
+            return Ok(json!({"authorized":false}));
+        };
+        let accepted = participant["active"] == true
+            && participant["coin"] == "btc"
+            && constant_time_equal(
+                participant["stratumPasswordHash"].as_str().unwrap_or(""),
+                &password_hash,
+            );
+        Ok(json!({
+            "authorized":accepted,
+            "participantId":if accepted { participant_id } else { "" },
+            "coin":if accepted { "btc" } else { "" }
+        }))
     }
 
     fn record_share(&self, request: &Request) -> Result<Value> {
