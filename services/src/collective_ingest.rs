@@ -150,10 +150,10 @@ fn coordinator_authorize(
     stratum_password: &str,
 ) -> bool {
     let response = ureq::post(&format!("{}/internal/authorize", config.coordinator_base))
-    .timeout(Duration::from_secs(3))
-    .set("Authorization", &format!("Bearer {}", config.backend_token))
-    .set("Content-Type", "application/json")
-    .send_json(json!({
+        .timeout(Duration::from_secs(3))
+        .set("Authorization", &format!("Bearer {}", config.backend_token))
+        .set("Content-Type", "application/json")
+        .send_json(json!({
         "participantId":participant_id,
         "stratumPassword":stratum_password
     }));
@@ -413,10 +413,10 @@ fn parse_ckpool_share(value: &Value) -> Option<AcceptedShare> {
 
 fn post_accepted_share(config: &IngestConfig, share: &AcceptedShare) -> io::Result<()> {
     let result = ureq::post(&format!("{}/internal/shares", config.coordinator_base))
-    .timeout(Duration::from_secs(3))
-    .set("Authorization", &format!("Bearer {}", config.backend_token))
-    .set("Content-Type", "application/json")
-    .send_json(json!({
+        .timeout(Duration::from_secs(3))
+        .set("Authorization", &format!("Bearer {}", config.backend_token))
+        .set("Content-Type", "application/json")
+        .send_json(json!({
         "coin":"btc",
         "shareId":share.share_id,
         "participantId":share.participant_id,
