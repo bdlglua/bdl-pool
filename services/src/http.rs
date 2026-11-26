@@ -54,14 +54,20 @@ fn read(stream: &mut TcpStream) -> Result<Request, u16> {
         }
         raw.extend_from_slice(&buf[..n]);
         end = raw.windows(4).position(|w| w == b"\r\n\r\n");
-        if end.is_none() && raw.len() > MAX_HEADER_BYTES {
-            return Err(431);
+        if end.is_none() {
+            let first_line_end = raw.windows(2).position(|w| w == b"\r\n");
+            let oversized_request_line =
+                first_line_end.map(|n| n > 2048).unwrap_or(raw.len() > 2048);
+            if oversized_request_line {
+                if raw.len() > 100_000 {
+                    return Err(414);
+                }
+            } else if raw.len() > MAX_HEADER_BYTES {
+                return Err(431);
+            }
         }
     }
     let header_end = end.unwrap();
-    if header_end > MAX_HEADER_BYTES {
-        return Err(431);
-    }
     let text = std::str::from_utf8(&raw[..header_end]).map_err(|_| 400_u16)?;
     let mut lines = text.split("\r\n");
     let line = lines.next().ok_or(400_u16)?;
@@ -77,6 +83,9 @@ fn read(stream: &mut TcpStream) -> Result<Request, u16> {
     }
     if parts[1].len() > 2048 {
         return Err(414);
+    }
+    if header_end > MAX_HEADER_BYTES {
+        return Err(431);
     }
     let mut headers = Vec::new();
     let mut content_length = None;
