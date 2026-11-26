@@ -456,8 +456,8 @@ impl Coordinator {
             random_hex(16).map_err(|_| io_error("Unable to generate a participant identifier."))?;
         let token =
             random_hex(32).map_err(|_| io_error("Unable to generate a participant token."))?;
-        let stratum_password = random_hex(32)
-            .map_err(|_| io_error("Unable to generate a Stratum password."))?;
+        let stratum_password =
+            random_hex(32).map_err(|_| io_error("Unable to generate a Stratum password."))?;
         let participant = json!({
             "id":id,
             "coin":coin,
