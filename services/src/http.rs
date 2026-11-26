@@ -142,7 +142,8 @@ fn send(
 ) -> io::Result<()> {
     let body = serde_json::to_vec(&response.data)?;
     let etag = format!("\\"{:x}\\"", Sha256::digest(&body));
-    let cached = response.status == 200
+    let cached = !allow_post
+        && response.status == 200
         && request.and_then(|r| r.header("if-none-match")) == Some(etag.as_str());
     let status = if cached { 304 } else { response.status };
     let reason = match status {
@@ -176,7 +177,11 @@ fn send(
     write!(
         stream,
         "HTTP/1.1 {status} {reason}\r\nContent-Type: application/json; charset=utf-8\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: {methods}\r\nAccess-Control-Allow-Headers: {allowed_headers}\r\nAccess-Control-Expose-Headers: ETag\r\nX-Content-Type-Options: nosniff\r\nConnection: close\r\nCache-Control: {}\r\n",
-        if response.status == 200 { "no-store" } else { "no-store" }
+        if !allow_post && response.status == 200 {
+            "public, max-age=5, must-revalidate"
+        } else {
+            "no-store"
+        }
     )?;
     if status == 405 {
         write!(
