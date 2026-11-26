@@ -892,12 +892,12 @@ mod tests {
         });
 
         let config = IngestConfig {
-            listen:"127.0.0.1:3337".parse().unwrap(),
-            upstream:"127.0.0.1:3338".parse().unwrap(),
-            coordinator_base:format!("http://127.0.0.1:{coordinator_port}/api/v1/collective"),
-            backend_token:"a".repeat(64),
-            share_log_root:log_root,
-            cursor_path:root.path().join("cursor.json"),
+            listen: "127.0.0.1:3337".parse().unwrap(),
+            upstream: "127.0.0.1:3338".parse().unwrap(),
+            coordinator_base: format!("http://127.0.0.1:{coordinator_port}/api/v1/collective"),
+            backend_token: "a".repeat(64),
+            share_log_root: log_root,
+            cursor_path: root.path().join("cursor.json"),
         };
         assert_eq!(process_sharelogs(&config).unwrap(), 2);
         worker.join().unwrap();
