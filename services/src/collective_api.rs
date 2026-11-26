@@ -17,7 +17,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     fs::{self, File, OpenOptions},
     io::{self, BufRead, BufReader, Write},
-    path::{Path, PathBuf},
+    path::Path,
     sync::Mutex,
 };
 #[cfg(unix)]
@@ -30,7 +30,7 @@ const MAX_LEDGER_BYTES: u64 = 512 * 1024 * 1024;
 const MAX_SHARES: usize = 1_000_000;
 const MAX_PARTICIPANTS: usize = 10_000;
 const MAX_BLOCKS: usize = 100_000;
-const MAX_EVENT_BYTES: usize = 16_384;
+const MAX_EVENT_BYTES: usize = 2 * 1024 * 1024;
 
 #[derive(Debug)]
 pub struct CoordinatorError {
@@ -84,7 +84,7 @@ fn constant_time_equal(left: &str, right: &str) -> bool {
     if a.len() != b.len() {
         return false;
     }
-    a.iter().zip(b).fold(0_u8, |diff, (x, y)| diff | (x ^ y)) == 0
+    a.iter().zip(b).fold(0_u8, |diff, (x, y)| diff | (*x ^ *y)) == 0
 }
 fn bearer(request: &Request) -> Option<&str> {
     request.header("authorization")?.strip_prefix("Bearer ")
@@ -95,7 +95,10 @@ fn authorized(request: &Request, expected: &str) -> bool {
         .unwrap_or(false)
 }
 fn parse_body(request: &Request) -> Result<Value> {
-    if request.body.is_empty() || request.body.len() > MAX_EVENT_BYTES {
+    if !request.header("content-type").map(|v| v.eq_ignore_ascii_case("application/json")).unwrap_or(false) {
+        return Err(invalid("Content-Type must be application/json."));
+    }
+    if request.body.is_empty() || request.body.len() > 32_768 {
         return Err(invalid("A JSON request body is required."));
     }
     let value: Value = serde_json::from_slice(&request.body)
@@ -600,7 +603,10 @@ mod tests {
         Request {
             method:method.into(),
             target:target.into(),
-            headers:vec![("authorization".into(),format!("Bearer {token}"))],
+            headers:vec![
+                ("authorization".into(),format!("Bearer {token}")),
+                ("content-type".into(),"application/json".into())
+            ],
             body:serde_json::to_vec(&body).unwrap()
         }
     }
