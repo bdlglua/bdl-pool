@@ -1,5 +1,9 @@
 # Essai d’OpenPort.pw
 
+Le profil `collective` réserve un quatrième relais TCP indépendant pour le
+minage BTC collectif : port local `127.0.0.1:3337`. Il ne remplace ni le
+relais solo V1 sur 3333, ni le relais solo V2 sur 3336, ni l’API HTTPS sur 443.
+
 Pour ajouter uniquement le relais **Bitcoin Cash**, sans réinstaller ni relancer
 les trois relais existants, suivre [l’installation BCH](../bch/README.md#réserver-le-vrai-accès-stratum-bch) :
 `python3 /home/bdl/bdl-pool-site/bch/relay.py install` dans la VM, sous `bdl`.
@@ -19,11 +23,13 @@ Avec le compte `bdl`, sans sudo :
 ```bash
 git -C /home/bdl/bdl-pool-site pull --ff-only
 python3 /home/bdl/bdl-pool-site/monitoring/try-openport.py test
+python3 /home/bdl/bdl-pool-site/monitoring/try-openport.py test --profile collective
 ```
 
 Le script télécharge le client ARM64 ou x86-64 du fournisseur, vérifie une
 empreinte SHA-256 fixée après lecture de sa liste officielle, puis crée
-une identité pour le profil V1. Aucun script distant d’installation n’est exécuté.
+une identité pour le profil V1. La seconde commande réserve séparément le profil collectif
+et son port public. Aucun script distant d’installation n’est exécuté.
 Le binaire reste sous `~/.local/share/bdl-pool-openport/`.
 
 Transmettre uniquement l’**URL de test** affichée et garder le terminal ouvert.
@@ -40,9 +46,10 @@ Après le premier test, relancer exactement la même commande :
 
 ```bash
 python3 /home/bdl/bdl-pool-site/monitoring/try-openport.py test
+python3 /home/bdl/bdl-pool-site/monitoring/try-openport.py test --profile collective
 ```
 
-Le script doit afficher **Port précédent confirmé**. Le port et l’hôte doivent
+Chaque profil doit afficher **Port précédent confirmé**. Le port et l’hôte doivent
 rester identiques ; seule la partie aléatoire du chemin de test change.
 Faire vérifier la seconde URL depuis Internet. Si le fournisseur change le port
 ou l’hôte, le script s’arrête et garde la configuration précédente.
@@ -74,10 +81,12 @@ git -C /home/bdl/bdl-pool-site pull --ff-only
 bash /home/bdl/bdl-pool-site/monitoring/install-openport.sh
 ```
 
-Trois unités `bdl-pool-openport@v1`, `@v2` et `@api` sont activées au démarrage.
+Quatre unités `bdl-pool-openport@v1`, `@v2`, `@api` et
+`@collective` sont activées au démarrage.
 V1 réutilise l’identité et le port des tests. V2 et API possèdent chacune une
 identité conservée séparément. Le script affiche seulement leurs adresses publiques.
-Les destinations sont respectivement `127.0.0.1:3333`, `:3336` et `:443`.
+Les destinations sont respectivement `127.0.0.1:3333`, `:3336`,
+`:443` et `:3337` pour le relais collectif.
 Les relais peuvent démarrer pendant l’attente de synchronisation Bitcoin ;
 cela n’indique pas que Stratum est déjà opérationnel.
 
@@ -92,13 +101,13 @@ des anciennes unités de mise à jour DuckDNS et la présence d’une tâche cro
 sans afficher leurs commandes ni leurs jetons.
 
 ```bash
-systemctl status bdl-pool-openport@v1 bdl-pool-openport@v2 bdl-pool-openport@api --no-pager
+systemctl status bdl-pool-openport@v1 bdl-pool-openport@v2 bdl-pool-openport@api bdl-pool-openport@collective --no-pager
 ```
 
 Pour arrêter les relais :
 
 ```bash
-sudo systemctl disable --now bdl-pool-openport@v1 bdl-pool-openport@v2 bdl-pool-openport@api
+sudo systemctl disable --now bdl-pool-openport@v1 bdl-pool-openport@v2 bdl-pool-openport@api bdl-pool-openport@collective
 ```
 
 ## DNS et HTTPS
