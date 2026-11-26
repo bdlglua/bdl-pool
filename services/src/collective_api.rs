@@ -210,7 +210,6 @@ impl LedgerState {
 struct Journal {
     file: File,
     state: LedgerState,
-    path: PathBuf,
 }
 impl Journal {
     fn open(path: &Path, initial_mode: PayoutMode) -> io::Result<Self> {
@@ -263,7 +262,7 @@ impl Journal {
                 .map_err(|_| io::Error::other("ledger contains invalid JSON"))?;
             state.apply_event(&event)?;
         }
-        Ok(Self { file, state, path: path.to_path_buf() })
+        Ok(Self { file, state })
     }
 
     fn append(&mut self, event: &Value) -> io::Result<()> {
@@ -395,8 +394,8 @@ impl Coordinator {
             return Err(unauthorized());
         }
         let body = parse_body(request)?;
-        let mode = required_str(&body, "payoutMode", 16)?
-            .pipe(PayoutMode::parse)
+        let mode_name = required_str(&body, "payoutMode", 16)?;
+        let mode = PayoutMode::parse(mode_name)
             .ok_or_else(|| invalid("payoutMode must be automatic or manual."))?;
         let mut ledger = self.journal.lock().map_err(|_| io_error("Ledger lock is unavailable."))?;
         if ledger.state.payout_mode != mode {
