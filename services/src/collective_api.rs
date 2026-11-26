@@ -687,10 +687,7 @@ impl Coordinator {
             .map_err(|_| io_error("Ledger lock is unavailable."))?;
         let key = LedgerState::block_key(coin, block_id);
         if let Some(existing) = ledger.state.candidates.get(&key) {
-            if existing["height"] == height
-                && existing["rewardAtoms"] == reward_atoms
-                && existing["status"] == "pending"
-            {
+            if existing["height"] == height && existing["rewardAtoms"] == reward_atoms {
                 return Ok(existing.clone());
             }
             return Err(conflict(
