@@ -599,6 +599,9 @@ fn poll_once(config: &WatchConfig, cursor: &mut CursorStore) -> io::Result<usize
     // A mature candidate is accounted only if the same block is still
     // canonical and its coinbase still pays the configured pool address.
     for candidate in pending_candidates(config)? {
+        if candidate["coin"] != "btc" {
+            continue;
+        }
         let height = candidate["height"]
             .as_u64()
             .ok_or_else(|| io::Error::other("saved candidate has invalid block height"))?;
