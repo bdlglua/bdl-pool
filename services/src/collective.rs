@@ -116,9 +116,9 @@ impl std::error::Error for AccountingError {}
 fn valid_identifier(value: &str, max_len: usize) -> bool {
     !value.is_empty()
         && value.len() <= max_len
-        && value.bytes().all(|b| {
-            b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b':')
-        })
+        && value
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b':'))
 }
 
 /// Builds a PPLNS reward plan using the newest accepted work up to the
@@ -237,11 +237,13 @@ pub fn plan_pplns_reward(
 
     let payouts = rows
         .into_iter()
-        .map(|(participant_id, work_units, amount_atoms, _)| PayoutAllocation {
-            participant_id,
-            work_units,
-            amount_atoms,
-        })
+        .map(
+            |(participant_id, work_units, amount_atoms, _)| PayoutAllocation {
+                participant_id,
+                work_units,
+                amount_atoms,
+            },
+        )
         .collect::<Vec<_>>();
 
     let distributed = payouts.iter().try_fold(0_u64, |sum, payout| {
@@ -284,19 +286,31 @@ mod tests {
             share(3, "s3", "alice", 40),
             share(4, "s4", "carol", 60),
         ];
-        let plan = plan_pplns_reward(
-            "btc", "block-1", 101, PayoutMode::Manual, 100, &shares,
-        ).unwrap();
+        let plan =
+            plan_pplns_reward("btc", "block-1", 101, PayoutMode::Manual, 100, &shares).unwrap();
 
         assert_eq!(plan.accounted_work_units, 100);
         assert_eq!(plan.payouts.len(), 2);
-        assert_eq!(plan.payouts[0], PayoutAllocation {
-            participant_id: "alice".into(), work_units: 40, amount_atoms: 40,
-        });
-        assert_eq!(plan.payouts[1], PayoutAllocation {
-            participant_id: "carol".into(), work_units: 60, amount_atoms: 61,
-        });
-        assert_eq!(plan.payouts.iter().map(|p| p.amount_atoms).sum::<u64>(), 101);
+        assert_eq!(
+            plan.payouts[0],
+            PayoutAllocation {
+                participant_id: "alice".into(),
+                work_units: 40,
+                amount_atoms: 40,
+            }
+        );
+        assert_eq!(
+            plan.payouts[1],
+            PayoutAllocation {
+                participant_id: "carol".into(),
+                work_units: 60,
+                amount_atoms: 61,
+            }
+        );
+        assert_eq!(
+            plan.payouts.iter().map(|p| p.amount_atoms).sum::<u64>(),
+            101
+        );
     }
 
     #[test]
@@ -306,26 +320,38 @@ mod tests {
             share(2, "s2", "alice", 1),
             share(3, "s3", "bob", 1),
         ];
-        let plan = plan_pplns_reward(
-            "bch", "block-2", 2, PayoutMode::Automatic, 3, &shares,
-        ).unwrap();
+        let plan =
+            plan_pplns_reward("bch", "block-2", 2, PayoutMode::Automatic, 3, &shares).unwrap();
 
-        assert_eq!(plan.payouts, vec![
-            PayoutAllocation { participant_id: "alice".into(), work_units: 1, amount_atoms: 1 },
-            PayoutAllocation { participant_id: "bob".into(), work_units: 1, amount_atoms: 1 },
-            PayoutAllocation { participant_id: "charlie".into(), work_units: 1, amount_atoms: 0 },
-        ]);
+        assert_eq!(
+            plan.payouts,
+            vec![
+                PayoutAllocation {
+                    participant_id: "alice".into(),
+                    work_units: 1,
+                    amount_atoms: 1
+                },
+                PayoutAllocation {
+                    participant_id: "bob".into(),
+                    work_units: 1,
+                    amount_atoms: 1
+                },
+                PayoutAllocation {
+                    participant_id: "charlie".into(),
+                    work_units: 1,
+                    amount_atoms: 0
+                },
+            ]
+        );
     }
 
     #[test]
     fn payout_mode_changes_settlement_instruction_not_the_math() {
         let shares = [share(1, "s1", "alice", 2), share(2, "s2", "bob", 3)];
-        let automatic = plan_pplns_reward(
-            "ppc", "block-3", 100, PayoutMode::Automatic, 5, &shares,
-        ).unwrap();
-        let manual = plan_pplns_reward(
-            "ppc", "block-3", 100, PayoutMode::Manual, 5, &shares,
-        ).unwrap();
+        let automatic =
+            plan_pplns_reward("ppc", "block-3", 100, PayoutMode::Automatic, 5, &shares).unwrap();
+        let manual =
+            plan_pplns_reward("ppc", "block-3", 100, PayoutMode::Manual, 5, &shares).unwrap();
 
         assert_ne!(automatic.payout_mode, manual.payout_mode);
         assert_eq!(automatic.payouts, manual.payouts);
@@ -335,8 +361,14 @@ mod tests {
     fn all_firmware_coin_profiles_are_recognized_by_the_accounting_core() {
         for coin in SUPPORTED_COINS {
             let plan = plan_pplns_reward(
-                coin, "block-4", 10, PayoutMode::Manual, 1, &[share(1, "s1", "miner-1", 1)],
-            ).unwrap();
+                coin,
+                "block-4",
+                10,
+                PayoutMode::Manual,
+                1,
+                &[share(1, "s1", "miner-1", 1)],
+            )
+            .unwrap();
             assert_eq!(plan.coin, coin);
         }
     }
@@ -344,8 +376,14 @@ mod tests {
     #[test]
     fn insufficient_history_uses_only_available_accepted_work() {
         let plan = plan_pplns_reward(
-            "dgb", "block-5", 9, PayoutMode::Manual, 100, &[share(1, "s1", "alice", 25)],
-        ).unwrap();
+            "dgb",
+            "block-5",
+            9,
+            PayoutMode::Manual,
+            100,
+            &[share(1, "s1", "alice", 25)],
+        )
+        .unwrap();
 
         assert_eq!(plan.requested_window_work_units, 100);
         assert_eq!(plan.accounted_work_units, 25);
@@ -367,7 +405,14 @@ mod tests {
         );
         let duplicate_sequence = [share(1, "s1", "alice", 1), share(1, "s2", "bob", 1)];
         assert_eq!(
-            plan_pplns_reward("btc", "block-6", 1, PayoutMode::Manual, 1, &duplicate_sequence),
+            plan_pplns_reward(
+                "btc",
+                "block-6",
+                1,
+                PayoutMode::Manual,
+                1,
+                &duplicate_sequence
+            ),
             Err(AccountingError::DuplicateSequence)
         );
     }
@@ -384,7 +429,12 @@ mod tests {
         );
         assert_eq!(
             plan_pplns_reward(
-                "btc", "block-1", 1, PayoutMode::Manual, 1, &[share(1, "s1", "alice", 0)],
+                "btc",
+                "block-1",
+                1,
+                PayoutMode::Manual,
+                1,
+                &[share(1, "s1", "alice", 0)],
             ),
             Err(AccountingError::InvalidShare)
         );
