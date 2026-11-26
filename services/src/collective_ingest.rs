@@ -749,6 +749,88 @@ mod tests {
     }
 
     #[test]
+    fn rejected_stratum_password_is_not_forwarded_and_upstream_is_closed() {
+        let coordinator = TcpListener::bind("127.0.0.1:0").unwrap();
+        let coordinator_port = coordinator.local_addr().unwrap().port();
+        let coordinator_worker = thread::spawn(move || {
+            let (mut stream, _) = coordinator.accept().unwrap();
+            let (request_line, body) = read_http_request(&mut stream).unwrap();
+            assert!(request_line.starts_with("POST /api/v1/collective/internal/authorize "));
+            assert_eq!(body["participantId"], "0123456789abcdef0123456789abcdef");
+            assert_eq!(body["stratumPassword"], "c".repeat(64));
+            reply_http(&mut stream, json!({"authorized":false})).unwrap();
+        });
+
+        let upstream = TcpListener::bind("127.0.0.1:0").unwrap();
+        let upstream_address = upstream.local_addr().unwrap();
+        let upstream_worker = thread::spawn(move || {
+            let (stream, _) = upstream.accept().unwrap();
+            stream.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
+            let mut reader = BufReader::new(stream);
+            let mut line = String::new();
+            reader.read_line(&mut line).unwrap();
+            assert!(line.contains("mining.subscribe"));
+            line.clear();
+            // The invalid authorize request must never reach CKPool; the proxy
+            // closes the upstream socket when the coordinator rejects it.
+            assert_eq!(reader.read_line(&mut line).unwrap(), 0);
+        });
+
+        let proxy_listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let proxy_address = proxy_listener.local_addr().unwrap();
+        let config = Arc::new(IngestConfig {
+            listen: proxy_address,
+            upstream: upstream_address,
+            coordinator_base: format!("http://127.0.0.1:{coordinator_port}/api/v1/collective"),
+            backend_token: "b".repeat(64),
+            share_log_root: std::env::temp_dir(),
+            cursor_path: std::env::temp_dir().join("bdl-collective-reject-test-cursor.json"),
+        });
+        let (sender, receiver) = mpsc::sync_channel::<TcpStream>(1);
+        let worker_config = config.clone();
+        let worker = thread::spawn(move || {
+            let stream = receiver.recv().unwrap();
+            proxy_connection(stream, worker_config.upstream, worker_config).unwrap();
+        });
+        let listener_worker = thread::spawn(move || {
+            let (stream, _) = proxy_listener.accept().unwrap();
+            sender.send(stream).unwrap();
+        });
+
+        let client = TcpStream::connect(proxy_address).unwrap();
+        listener_worker.join().unwrap();
+        let mut reader = BufReader::new(client.try_clone().unwrap());
+        let mut writer = client;
+        writer.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
+        writer
+            .write_all(b"{\"id\":1,\"method\":\"mining.subscribe\",\"params\":[\"BDLMinerV2\"]}\n")
+            .unwrap();
+        writer.flush().unwrap();
+
+        writer
+            .write_all(
+                format!(
+                    "{{\"id\":2,\"method\":\"mining.authorize\",\"params\":[\"0123456789abcdef0123456789abcdef.gamma601\",\"{}\"]}}\n",
+                    "c".repeat(64)
+                )
+                .as_bytes(),
+            )
+            .unwrap();
+        writer.flush().unwrap();
+        let mut response = String::new();
+        reader.read_line(&mut response).unwrap();
+        let denied: Value = serde_json::from_str(&response).unwrap();
+        assert_eq!(denied["id"], 2);
+        assert_eq!(denied["result"], false);
+        assert_eq!(denied["error"][1], "Unauthorized worker");
+
+        coordinator_worker.join().unwrap();
+        upstream_worker.join().unwrap();
+        writer.shutdown(std::net::Shutdown::Both).unwrap();
+        worker.join().unwrap();
+    }
+
+    #[test]
     fn authenticated_v1_proxy_forwards_only_registered_miners() {
         let coordinator = TcpListener::bind("127.0.0.1:0").unwrap();
         let coordinator_port = coordinator.local_addr().unwrap().port();
