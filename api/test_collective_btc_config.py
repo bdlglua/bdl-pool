@@ -43,6 +43,7 @@ class CollectiveBtcConfigTests(unittest.TestCase):
         self.assertEqual(config["zmqblock"], base["zmqblock"])
         self.assertEqual(config["btcaddress"], "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy")
         self.assertEqual(config["serverurl"], ["127.0.0.1:3338"])
+        self.assertEqual(config["ipcmining"], "/run/bdl-pool-ckpool-collective/mining.sock")
         self.assertEqual(config["logdir"], "/home/bdl/mining/ckpool/collective-logs/")
         self.assertEqual(config["donation"], 0.0)
         self.assertEqual(config["mindiff"], 1)
