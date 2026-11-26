@@ -1205,7 +1205,7 @@ mod tests {
             &"b".repeat(64),
             json!({
                 "coin":"btc","blockId":"block-2","rewardAtoms":100,
-                "windowWorkUnits":100,"mature":true
+                "windowWorkUnits":40,"mature":true
             }),
         ));
         assert_eq!(block.status, 200);
