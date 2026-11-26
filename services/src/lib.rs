@@ -3,6 +3,7 @@ pub mod api;
 pub mod collect;
 pub mod collective;
 pub mod collective_api;
+pub mod collective_btc_watcher;
 pub mod collective_ingest;
 pub mod http;
 pub mod install;
