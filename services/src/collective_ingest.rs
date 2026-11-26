@@ -68,7 +68,10 @@ fn coordinator_base(value: &str) -> io::Result<String> {
     let url = Url::parse(value).map_err(io::Error::other)?;
     if url.scheme() != "http"
         || url.host_str() != Some("127.0.0.1")
-        || !url.port_or_known_default().map(|port| port > 1024).unwrap_or(false)
+        || !url
+            .port_or_known_default()
+            .map(|port| port > 1024)
+            .unwrap_or(false)
         || url.path() != "/api/v1/collective"
         || url.query().is_some()
         || url.fragment().is_some()
@@ -812,7 +815,9 @@ mod tests {
         listener_worker.join().unwrap();
         let mut reader = BufReader::new(client.try_clone().unwrap());
         let mut writer = client;
-        writer.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
+        writer
+            .set_read_timeout(Some(Duration::from_secs(3)))
+            .unwrap();
         writer
             .write_all(b"{\"id\":1,\"method\":\"mining.subscribe\",\"params\":[\"BDLMinerV2\"]}\n")
             .unwrap();
