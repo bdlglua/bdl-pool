@@ -470,7 +470,7 @@ impl CursorStore {
             },
             Err(error) => return Err(error),
         };
-        let mut store = Self {
+        let store = Self {
             path: path.to_path_buf(),
             cursor,
             _lock_file: lock_file,
