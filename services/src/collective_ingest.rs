@@ -844,6 +844,66 @@ mod tests {
     }
 
     #[test]
+    fn sharelog_collector_posts_only_accepted_shares_and_persists_the_cursor() {
+        let root = TempDir::new().unwrap();
+        let log_root = root.path().join("logs");
+        fs::create_dir_all(log_root.join("00000001")).unwrap();
+        let file = log_root.join("00000001/0000000000000001.sharelog");
+        let id = "0123456789abcdef0123456789abcdef";
+        let base = json!({
+            "workinfoid":1,
+            "clientid":1,
+            "nonce2":"00000001",
+            "nonce":"deadbeef",
+            "ntime":"65abc123",
+            "hash":"c".repeat(64),
+            "diff":0.0002,
+            "sdiff":0.00025,
+            "result":true,
+            "username":id,
+            "workername":"gamma601",
+            "createdate":"1700000000,000000001"
+        });
+        let mut rejected = base.clone();
+        rejected["result"] = false.into();
+        let mut content = serde_json::to_vec(&base).unwrap();
+        content.push(b'\\n');
+        content.extend_from_slice(&serde_json::to_vec(&rejected).unwrap());
+        content.push(b'\\n');
+        fs::write(&file, content).unwrap();
+
+        let coordinator = TcpListener::bind("127.0.0.1:0").unwrap();
+        let coordinator_port = coordinator.local_addr().unwrap().port();
+        let worker = thread::spawn(move || {
+            let (mut stream, _) = coordinator.accept().unwrap();
+            let (request_line, body) = read_http_request(&mut stream).unwrap();
+            assert!(request_line.starts_with("POST /api/v1/collective/internal/shares "));
+            assert_eq!(body["coin"], "btc");
+            assert_eq!(body["participantId"], id);
+            assert_eq!(body["workUnits"], 200);
+            assert!(body["shareId"].as_str().unwrap().starts_with("ckp-"));
+            reply_http(&mut stream, json!({"accepted":true,"sequence":1})).unwrap();
+        });
+
+        let config = IngestConfig {
+            listen:"127.0.0.1:3337".parse().unwrap(),
+            upstream:"127.0.0.1:3338".parse().unwrap(),
+            coordinator_base:format!("http://127.0.0.1:{coordinator_port}/api/v1/collective"),
+            backend_token:"a".repeat(64),
+            share_log_root:log_root,
+            cursor_path:root.path().join("cursor.json"),
+        };
+        assert_eq!(process_sharelogs(&config).unwrap(), 2);
+        worker.join().unwrap();
+        let cursor = read_cursors(&config.cursor_path).unwrap();
+        assert_eq!(
+            cursor["00000001/0000000000000001.sharelog"],
+            fs::metadata(&file).unwrap().len()
+        );
+        assert_eq!(process_sharelogs(&config).unwrap(), 0);
+    }
+
+    #[test]
     fn sharelog_collector_persists_offsets_and_does_not_double_submit_after_restart() {
         let root = TempDir::new().unwrap();
         let log_root = root.path().join("logs");
