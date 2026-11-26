@@ -230,7 +230,9 @@ fn coinbase_reward_for_address(
         ));
     }
     if block["confirmations"].as_i64().unwrap_or(0) < 1 {
-        return Err(io::Error::other("Bitcoin Core block is not in the active chain"));
+        return Err(io::Error::other(
+            "Bitcoin Core block is not in the active chain",
+        ));
     }
 
     let transactions = block["tx"]
@@ -243,7 +245,9 @@ fn coinbase_reward_for_address(
         .map(|items| items.len() == 1 && items[0]["coinbase"].is_string())
         .unwrap_or(false)
     {
-        return Err(io::Error::other("first Bitcoin block transaction is not coinbase"));
+        return Err(io::Error::other(
+            "first Bitcoin block transaction is not coinbase",
+        ));
     }
     let outputs = coinbase["vout"]
         .as_array()
@@ -332,7 +336,9 @@ fn orphan_candidate(config: &WatchConfig, block_hash: &str) -> io::Result<()> {
         .into_json()
         .map_err(|_| io::Error::other("coordinator returned invalid orphan response"))?;
     if result["status"].as_str() == Some("error") {
-        return Err(io::Error::other("coordinator rejected orphaned block candidate"));
+        return Err(io::Error::other(
+            "coordinator rejected orphaned block candidate",
+        ));
     }
     Ok(())
 }
