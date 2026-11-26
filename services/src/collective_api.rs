@@ -13,17 +13,17 @@ use crate::{
 use chrono::Utc;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
+#[cfg(unix)]
+use std::os::{
+    fd::AsRawFd,
+    unix::fs::{OpenOptionsExt, PermissionsExt},
+};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs::{self, File, OpenOptions},
     io::{self, BufRead, BufReader, Write},
     path::Path,
     sync::Mutex,
-};
-#[cfg(unix)]
-use std::os::{
-    fd::AsRawFd,
-    unix::fs::{OpenOptionsExt, PermissionsExt},
 };
 
 const MAX_LEDGER_BYTES: u64 = 512 * 1024 * 1024;
@@ -40,7 +40,11 @@ pub struct CoordinatorError {
 }
 impl CoordinatorError {
     fn new(status: u16, code: &'static str, message: impl Into<String>) -> Self {
-        Self { status, code, message: message.into() }
+        Self {
+            status,
+            code,
+            message: message.into(),
+        }
     }
     fn response(self) -> Response {
         Response::error(self.status, self.code, &self.message)
@@ -57,9 +61,9 @@ fn invalid(message: &str) -> CoordinatorError {
 fn valid_id(value: &str, max_len: usize) -> bool {
     !value.is_empty()
         && value.len() <= max_len
-        && value.bytes().all(|b| {
-            b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b':')
-        })
+        && value
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b':'))
 }
 fn hex(value: &[u8]) -> String {
     const DIGITS: &[u8; 16] = b"0123456789abcdef";
@@ -95,7 +99,11 @@ fn authorized(request: &Request, expected: &str) -> bool {
         .unwrap_or(false)
 }
 fn parse_body(request: &Request) -> Result<Value> {
-    if !request.header("content-type").map(|v| v.eq_ignore_ascii_case("application/json")).unwrap_or(false) {
+    if !request
+        .header("content-type")
+        .map(|v| v.eq_ignore_ascii_case("application/json"))
+        .unwrap_or(false)
+    {
         return Err(invalid("Content-Type must be application/json."));
     }
     if request.body.is_empty() || request.body.len() > 32_768 {
@@ -154,22 +162,45 @@ impl LedgerState {
     fn apply_event(&mut self, event: &Value) -> io::Result<()> {
         match event["type"].as_str() {
             Some("participant_created") => {
-                let p = event.get("participant").ok_or_else(|| io::Error::other("missing participant"))?;
-                let id = p["id"].as_str().ok_or_else(|| io::Error::other("missing participant ID"))?;
-                if self.participants.contains_key(id) || self.participants.len() >= MAX_PARTICIPANTS {
-                    return Err(io::Error::other("duplicate or excessive participant records"));
+                let p = event
+                    .get("participant")
+                    .ok_or_else(|| io::Error::other("missing participant"))?;
+                let id = p["id"]
+                    .as_str()
+                    .ok_or_else(|| io::Error::other("missing participant ID"))?;
+                if self.participants.contains_key(id) || self.participants.len() >= MAX_PARTICIPANTS
+                {
+                    return Err(io::Error::other(
+                        "duplicate or excessive participant records",
+                    ));
                 }
                 self.participants.insert(id.to_string(), p.clone());
             }
             Some("share_accepted") => {
-                let s = event.get("share").ok_or_else(|| io::Error::other("missing share"))?;
-                let sequence = s["sequence"].as_u64().ok_or_else(|| io::Error::other("invalid share sequence"))?;
-                let share_id = s["shareId"].as_str().ok_or_else(|| io::Error::other("invalid share ID"))?;
-                let participant_id = s["participantId"].as_str().ok_or_else(|| io::Error::other("invalid participant ID"))?;
-                let coin = s["coin"].as_str().ok_or_else(|| io::Error::other("invalid coin"))?;
-                let work_units = s["workUnits"].as_u64().ok_or_else(|| io::Error::other("invalid work units"))?;
+                let s = event
+                    .get("share")
+                    .ok_or_else(|| io::Error::other("missing share"))?;
+                let sequence = s["sequence"]
+                    .as_u64()
+                    .ok_or_else(|| io::Error::other("invalid share sequence"))?;
+                let share_id = s["shareId"]
+                    .as_str()
+                    .ok_or_else(|| io::Error::other("invalid share ID"))?;
+                let participant_id = s["participantId"]
+                    .as_str()
+                    .ok_or_else(|| io::Error::other("invalid participant ID"))?;
+                let coin = s["coin"]
+                    .as_str()
+                    .ok_or_else(|| io::Error::other("invalid coin"))?;
+                let work_units = s["workUnits"]
+                    .as_u64()
+                    .ok_or_else(|| io::Error::other("invalid work units"))?;
                 if sequence != self.next_sequence
-                    || !self.participants.get(participant_id).map(|p| p["coin"] == coin).unwrap_or(false)
+                    || !self
+                        .participants
+                        .get(participant_id)
+                        .map(|p| p["coin"] == coin)
+                        .unwrap_or(false)
                     || self.share_ids.contains(&format!("{coin}:{share_id}"))
                     || work_units == 0
                     || self.share_count >= MAX_SHARES
@@ -185,13 +216,21 @@ impl LedgerState {
                 self.shares.entry(coin.to_string()).or_default().push(share);
                 self.share_ids.insert(format!("{coin}:{share_id}"));
                 self.share_count += 1;
-                self.next_sequence = self.next_sequence.checked_add(1)
+                self.next_sequence = self
+                    .next_sequence
+                    .checked_add(1)
                     .ok_or_else(|| io::Error::other("share sequence exhausted"))?;
             }
             Some("block_recorded") => {
-                let b = event.get("block").ok_or_else(|| io::Error::other("missing block"))?;
-                let coin = b["coin"].as_str().ok_or_else(|| io::Error::other("invalid block coin"))?;
-                let block_id = b["blockId"].as_str().ok_or_else(|| io::Error::other("invalid block ID"))?;
+                let b = event
+                    .get("block")
+                    .ok_or_else(|| io::Error::other("missing block"))?;
+                let coin = b["coin"]
+                    .as_str()
+                    .ok_or_else(|| io::Error::other("invalid block coin"))?;
+                let block_id = b["blockId"]
+                    .as_str()
+                    .ok_or_else(|| io::Error::other("invalid block ID"))?;
                 let key = Self::block_key(coin, block_id);
                 if self.blocks.contains_key(&key) || self.blocks.len() >= MAX_BLOCKS {
                     return Err(io::Error::other("duplicate or excessive block records"));
@@ -199,7 +238,8 @@ impl LedgerState {
                 self.blocks.insert(key, b.clone());
             }
             Some("payout_mode_changed") => {
-                let mode = event["mode"].as_str()
+                let mode = event["mode"]
+                    .as_str()
                     .and_then(PayoutMode::parse)
                     .ok_or_else(|| io::Error::other("invalid payout mode"))?;
                 self.payout_mode = mode;
@@ -216,18 +256,24 @@ struct Journal {
 }
 impl Journal {
     fn open(path: &Path, initial_mode: PayoutMode) -> io::Result<Self> {
-        let parent = path.parent().ok_or_else(|| io::Error::other("ledger path has no parent"))?;
+        let parent = path
+            .parent()
+            .ok_or_else(|| io::Error::other("ledger path has no parent"))?;
         fs::create_dir_all(parent)?;
         let parent_meta = fs::symlink_metadata(parent)?;
         if !parent_meta.is_dir() || parent_meta.file_type().is_symlink() {
-            return Err(io::Error::other("ledger directory must be a real directory"));
+            return Err(io::Error::other(
+                "ledger directory must be a real directory",
+            ));
         }
         #[cfg(unix)]
         fs::set_permissions(parent, fs::Permissions::from_mode(0o700))?;
         let mut options = OpenOptions::new();
         options.read(true).append(true).create(true);
         #[cfg(unix)]
-        options.mode(0o600).custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC);
+        options
+            .mode(0o600)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC);
         let file = options.open(path)?;
         if !file.metadata()?.is_file() {
             return Err(io::Error::other("ledger path is not a regular file"));
@@ -238,7 +284,9 @@ impl Journal {
             // Keep the exclusive lock for the lifetime of this service process.
             let rc = unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) };
             if rc != 0 {
-                return Err(io::Error::other("another coordinator process owns the ledger"));
+                return Err(io::Error::other(
+                    "another coordinator process owns the ledger",
+                ));
             }
         }
         let size = file.metadata()?.len();
@@ -276,7 +324,9 @@ impl Journal {
         encoded.push(b'\n');
         let current = self.file.metadata()?.len();
         if current.saturating_add(encoded.len() as u64) > MAX_LEDGER_BYTES {
-            return Err(io::Error::other("ledger storage limit reached; archive/compact before accepting more work"));
+            return Err(io::Error::other(
+                "ledger storage limit reached; archive/compact before accepting more work",
+            ));
         }
         self.file.write_all(&encoded)?;
         self.file.sync_data()?;
@@ -291,17 +341,28 @@ pub struct Coordinator {
 }
 impl Coordinator {
     pub fn open(config: Value) -> io::Result<Self> {
-        let path = config["ledgerPath"].as_str()
+        let path = config["ledgerPath"]
+            .as_str()
             .filter(|s| !s.is_empty() && !s.contains(['\n', '\r', '\0']))
             .ok_or_else(|| io::Error::other("missing ledgerPath"))?;
-        let admin_token = config["adminToken"].as_str().unwrap_or_default().to_string();
-        let backend_token = config["backendToken"].as_str().unwrap_or_default().to_string();
-        if !valid_secret(&admin_token) || !valid_secret(&backend_token)
+        let admin_token = config["adminToken"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+        let backend_token = config["backendToken"]
+            .as_str()
+            .unwrap_or_default()
+            .to_string();
+        if !valid_secret(&admin_token)
+            || !valid_secret(&backend_token)
             || constant_time_equal(&admin_token, &backend_token)
         {
-            return Err(io::Error::other("adminToken and backendToken must be distinct 32-byte lowercase hex tokens"));
+            return Err(io::Error::other(
+                "adminToken and backendToken must be distinct 32-byte lowercase hex tokens",
+            ));
         }
-        let mode = config["payoutMode"].as_str()
+        let mode = config["payoutMode"]
+            .as_str()
             .and_then(PayoutMode::parse)
             .unwrap_or(PayoutMode::Manual);
         let journal = Journal::open(Path::new(path), mode)?;
@@ -321,7 +382,9 @@ impl Coordinator {
 
     fn route(&self, request: &Request) -> Result<Value> {
         if request.target.contains('?') || request.target.contains('#') {
-            return Err(invalid("Query strings and fragments are not accepted on coordinator routes."));
+            return Err(invalid(
+                "Query strings and fragments are not accepted on coordinator routes.",
+            ));
         }
         let path = request.target.as_str();
         match (request.method.as_str(), path) {
@@ -333,12 +396,19 @@ impl Coordinator {
             ("POST", "/api/v1/collective/admin/payout-mode") => self.change_payout_mode(request),
             ("POST", "/api/v1/collective/internal/shares") => self.record_share(request),
             ("POST", "/api/v1/collective/internal/blocks") => self.record_block(request),
-            _ => Err(CoordinatorError::new(404, "not_found", "Coordinator endpoint not found.")),
+            _ => Err(CoordinatorError::new(
+                404,
+                "not_found",
+                "Coordinator endpoint not found.",
+            )),
         }
     }
 
     fn public_status(&self) -> Result<Value> {
-        let ledger = self.journal.lock().map_err(|_| io_error("Ledger lock is unavailable."))?;
+        let ledger = self
+            .journal
+            .lock()
+            .map_err(|_| io_error("Ledger lock is unavailable."))?;
         let coins: Vec<Value> = SUPPORTED_COINS.iter().map(|coin| {
             let participants = ledger.state.participants.values()
                 .filter(|p| p["coin"] == *coin && p["active"] == true).count();
@@ -367,14 +437,24 @@ impl Coordinator {
             return Err(invalid("Unsupported coin profile."));
         }
         let raw_address = required_str(&body, "payoutAddress", 128)?;
-        let address = address::canonical_coin(raw_address, coin)
-            .ok_or_else(|| invalid("The payout address is invalid for the selected mainnet coin."))?;
-        let mut ledger = self.journal.lock().map_err(|_| io_error("Ledger lock is unavailable."))?;
+        let address = address::canonical_coin(raw_address, coin).ok_or_else(|| {
+            invalid("The payout address is invalid for the selected mainnet coin.")
+        })?;
+        let mut ledger = self
+            .journal
+            .lock()
+            .map_err(|_| io_error("Ledger lock is unavailable."))?;
         if ledger.state.participants.len() >= MAX_PARTICIPANTS {
-            return Err(CoordinatorError::new(507, "participant_limit", "Participant capacity reached."));
+            return Err(CoordinatorError::new(
+                507,
+                "participant_limit",
+                "Participant capacity reached.",
+            ));
         }
-        let id = random_hex(16).map_err(|_| io_error("Unable to generate a participant identifier."))?;
-        let token = random_hex(32).map_err(|_| io_error("Unable to generate a participant token."))?;
+        let id =
+            random_hex(16).map_err(|_| io_error("Unable to generate a participant identifier."))?;
+        let token =
+            random_hex(32).map_err(|_| io_error("Unable to generate a participant token."))?;
         let participant = json!({
             "id":id,
             "coin":coin,
@@ -384,7 +464,9 @@ impl Coordinator {
             "createdAt":Utc::now().to_rfc3339()
         });
         let event = json!({"type":"participant_created","participant":participant});
-        ledger.append(&event).map_err(|_| io_error("The participant could not be committed to the durable ledger."))?;
+        ledger.append(&event).map_err(|_| {
+            io_error("The participant could not be committed to the durable ledger.")
+        })?;
         Ok(json!({
             "participant":{"id":id,"coin":coin,"payoutAddress":address,"active":true},
             "participantToken":token,
@@ -400,10 +482,15 @@ impl Coordinator {
         let mode_name = required_str(&body, "payoutMode", 16)?;
         let mode = PayoutMode::parse(mode_name)
             .ok_or_else(|| invalid("payoutMode must be automatic or manual."))?;
-        let mut ledger = self.journal.lock().map_err(|_| io_error("Ledger lock is unavailable."))?;
+        let mut ledger = self
+            .journal
+            .lock()
+            .map_err(|_| io_error("Ledger lock is unavailable."))?;
         if ledger.state.payout_mode != mode {
             let event = json!({"type":"payout_mode_changed","mode":mode.as_str(),"changedAt":Utc::now().to_rfc3339()});
-            ledger.append(&event).map_err(|_| io_error("Payout mode could not be committed."))?;
+            ledger
+                .append(&event)
+                .map_err(|_| io_error("Payout mode could not be committed."))?;
         }
         Ok(json!({"payoutMode":mode.as_str(),"paymentsEnabled":false}))
     }
@@ -417,20 +504,40 @@ impl Coordinator {
         let share_id = required_str(&body, "shareId", 128)?;
         let participant_id = required_str(&body, "participantId", 64)?;
         let work_units = required_u64(&body, "workUnits")?;
-        if !SUPPORTED_COINS.contains(&coin) || !valid_id(share_id, 128) || !valid_id(participant_id, 64) {
+        if !SUPPORTED_COINS.contains(&coin)
+            || !valid_id(share_id, 128)
+            || !valid_id(participant_id, 64)
+        {
             return Err(invalid("Share identity or coin is invalid."));
         }
-        let mut ledger = self.journal.lock().map_err(|_| io_error("Ledger lock is unavailable."))?;
-        if !ledger.state.participants.get(participant_id)
-            .map(|p| p["coin"] == coin && p["active"] == true).unwrap_or(false)
+        let mut ledger = self
+            .journal
+            .lock()
+            .map_err(|_| io_error("Ledger lock is unavailable."))?;
+        if !ledger
+            .state
+            .participants
+            .get(participant_id)
+            .map(|p| p["coin"] == coin && p["active"] == true)
+            .unwrap_or(false)
         {
             return Err(conflict("No active participant exists for this coin."));
         }
-        if ledger.state.share_ids.contains(&format!("{coin}:{share_id}")) {
-            return Err(conflict("This accepted share identifier has already been recorded."));
+        if ledger
+            .state
+            .share_ids
+            .contains(&format!("{coin}:{share_id}"))
+        {
+            return Err(conflict(
+                "This accepted share identifier has already been recorded.",
+            ));
         }
         if ledger.state.share_count >= MAX_SHARES {
-            return Err(CoordinatorError::new(507, "share_limit", "Share ledger capacity reached."));
+            return Err(CoordinatorError::new(
+                507,
+                "share_limit",
+                "Share ledger capacity reached.",
+            ));
         }
         let sequence = ledger.state.next_sequence;
         let share = json!({
@@ -442,7 +549,9 @@ impl Coordinator {
             "acceptedAt":Utc::now().to_rfc3339()
         });
         let event = json!({"type":"share_accepted","share":share});
-        ledger.append(&event).map_err(|_| io_error("Accepted share could not be committed to the durable ledger."))?;
+        ledger.append(&event).map_err(|_| {
+            io_error("Accepted share could not be committed to the durable ledger.")
+        })?;
         Ok(json!({"accepted":true,"sequence":sequence,"coin":coin,"workUnits":work_units}))
     }
 
@@ -459,9 +568,14 @@ impl Coordinator {
             return Err(invalid("Block identifier or coin is invalid."));
         }
         if body["mature"] != true {
-            return Err(conflict("A block can only be recorded after the coin backend confirms maturity."));
+            return Err(conflict(
+                "A block can only be recorded after the coin backend confirms maturity.",
+            ));
         }
-        let mut ledger = self.journal.lock().map_err(|_| io_error("Ledger lock is unavailable."))?;
+        let mut ledger = self
+            .journal
+            .lock()
+            .map_err(|_| io_error("Ledger lock is unavailable."))?;
         let key = LedgerState::block_key(coin, block_id);
         if let Some(existing) = ledger.state.blocks.get(&key) {
             if existing["rewardAtoms"] == reward_atoms
@@ -470,10 +584,16 @@ impl Coordinator {
             {
                 return Ok(existing.clone());
             }
-            return Err(conflict("This coin/block identifier already exists with different reward data."));
+            return Err(conflict(
+                "This coin/block identifier already exists with different reward data.",
+            ));
         }
         if ledger.state.blocks.len() >= MAX_BLOCKS {
-            return Err(CoordinatorError::new(507, "block_limit", "Block ledger capacity reached."));
+            return Err(CoordinatorError::new(
+                507,
+                "block_limit",
+                "Block ledger capacity reached.",
+            ));
         }
         let shares = ledger.state.shares.get(coin).cloned().unwrap_or_default();
         let plan = plan_pplns_reward(
@@ -483,7 +603,8 @@ impl Coordinator {
             ledger.state.payout_mode,
             window as u128,
             &shares,
-        ).map_err(|error| conflict(&error.to_string()))?;
+        )
+        .map_err(|error| conflict(&error.to_string()))?;
         let allocations: Vec<Value> = plan.payouts.iter().map(|p| {
             json!({"participantId":p.participant_id,"workUnits":p.work_units,"amountAtoms":p.amount_atoms})
         }).collect();
@@ -501,23 +622,42 @@ impl Coordinator {
             "paymentsEnabled":false
         });
         let event = json!({"type":"block_recorded","block":block});
-        ledger.append(&event).map_err(|_| io_error("Mature block reward could not be committed to the durable ledger."))?;
+        ledger.append(&event).map_err(|_| {
+            io_error("Mature block reward could not be committed to the durable ledger.")
+        })?;
         Ok(block)
     }
 
     fn participant_status(&self, request: &Request) -> Result<Value> {
-        let token = bearer(request).filter(|v| valid_secret(v)).ok_or_else(unauthorized)?;
+        let token = bearer(request)
+            .filter(|v| valid_secret(v))
+            .ok_or_else(unauthorized)?;
         let token_hash = sha256_hex(token);
-        let ledger = self.journal.lock().map_err(|_| io_error("Ledger lock is unavailable."))?;
-        let participant = ledger.state.participants.values()
+        let ledger = self
+            .journal
+            .lock()
+            .map_err(|_| io_error("Ledger lock is unavailable."))?;
+        let participant = ledger
+            .state
+            .participants
+            .values()
             .find(|p| constant_time_equal(p["tokenHash"].as_str().unwrap_or(""), &token_hash))
             .ok_or_else(unauthorized)?;
         let id = participant["id"].as_str().unwrap_or_default();
         let coin = participant["coin"].as_str().unwrap_or_default();
-        let shares = ledger.state.shares.get(coin).into_iter().flatten()
-            .filter(|s| s.participant_id == id).collect::<Vec<_>>();
+        let shares = ledger
+            .state
+            .shares
+            .get(coin)
+            .into_iter()
+            .flatten()
+            .filter(|s| s.participant_id == id)
+            .collect::<Vec<_>>();
         let accepted_work_units: u128 = shares.iter().map(|s| s.work_units as u128).sum();
-        let pending_atoms: u128 = ledger.state.blocks.values()
+        let pending_atoms: u128 = ledger
+            .state
+            .blocks
+            .values()
             .filter(|b| b["coin"] == coin && b["status"] == "awaiting_settlement")
             .flat_map(|b| b["allocations"].as_array().into_iter().flatten())
             .filter(|p| p["participantId"] == id)
@@ -536,7 +676,10 @@ impl Coordinator {
         if !authorized(request, &self.admin_token) {
             return Err(unauthorized());
         }
-        let ledger = self.journal.lock().map_err(|_| io_error("Ledger lock is unavailable."))?;
+        let ledger = self
+            .journal
+            .lock()
+            .map_err(|_| io_error("Ledger lock is unavailable."))?;
         let participants: Vec<Value> = ledger.state.participants.values().map(|p| {
             json!({"id":p["id"],"coin":p["coin"],"payoutAddress":p["payoutAddress"],"active":p["active"],"createdAt":p["createdAt"]})
         }).collect();
@@ -547,23 +690,34 @@ impl Coordinator {
         if !authorized(request, &self.admin_token) {
             return Err(unauthorized());
         }
-        let ledger = self.journal.lock().map_err(|_| io_error("Ledger lock is unavailable."))?;
+        let ledger = self
+            .journal
+            .lock()
+            .map_err(|_| io_error("Ledger lock is unavailable."))?;
         let blocks: Vec<Value> = ledger.state.blocks.values().cloned().collect();
         Ok(json!({"blocks":blocks,"total":blocks.len()}))
     }
 }
 
 fn valid_secret(value: &str) -> bool {
-    value.len() == 64 && value.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
 }
 
 /// Create the first coordinator config exactly once. Both secrets are 256-bit
 /// random tokens, written mode 0600; they are printed once for the operator.
 pub fn init_config(config_path: &Path, ledger_path: &Path) -> io::Result<(String, String)> {
     if config_path.exists() {
-        return Err(io::Error::new(io::ErrorKind::AlreadyExists, "coordinator config already exists; refusing to replace secrets"));
+        return Err(io::Error::new(
+            io::ErrorKind::AlreadyExists,
+            "coordinator config already exists; refusing to replace secrets",
+        ));
     }
-    let parent = config_path.parent().ok_or_else(|| io::Error::other("config path has no parent"))?;
+    let parent = config_path
+        .parent()
+        .ok_or_else(|| io::Error::other("config path has no parent"))?;
     fs::create_dir_all(parent)?;
     #[cfg(unix)]
     fs::set_permissions(parent, fs::Permissions::from_mode(0o700))?;
@@ -579,7 +733,9 @@ pub fn init_config(config_path: &Path, ledger_path: &Path) -> io::Result<(String
     let mut options = OpenOptions::new();
     options.write(true).create_new(true);
     #[cfg(unix)]
-    options.mode(0o600).custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC);
+    options
+        .mode(0o600)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC);
     let mut file = options.open(config_path)?;
     file.write_all(&encoded)?;
     file.sync_all()?;
@@ -634,12 +790,7 @@ mod tests {
         assert_eq!(accepted.data["accepted"], true);
         drop(coordinator);
         let reopened = Coordinator::open(cfg).unwrap();
-        let me = reopened.dispatch(&request(
-            "GET",
-            "/api/v1/collective/me",
-            &token,
-            json!({}),
-        ));
+        let me = reopened.dispatch(&request("GET", "/api/v1/collective/me", &token, json!({})));
         assert_eq!(me.data["acceptedShares"], 1);
         assert_eq!(me.data["acceptedWorkUnits"], 250);
     }
@@ -710,12 +861,7 @@ mod tests {
             &"a".repeat(64),
             json!({"coin":"btc","payoutAddress":"1BoatSLRHtKNngkdXEeobR76b53LETtpyT"}),
         ));
-        let response = c.dispatch(&request(
-            "GET",
-            "/api/v1/collective/status",
-            "",
-            json!({}),
-        ));
+        let response = c.dispatch(&request("GET", "/api/v1/collective/status", "", json!({})));
         assert_eq!(response.data["status"], "ok");
         assert!(!response.data.to_string().contains("1Boat"));
         assert!(!response.data.to_string().contains(&"a".repeat(64)));
