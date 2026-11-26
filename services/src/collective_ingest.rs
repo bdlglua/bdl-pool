@@ -68,7 +68,7 @@ fn coordinator_base(value: &str) -> io::Result<String> {
     let url = Url::parse(value).map_err(io::Error::other)?;
     if url.scheme() != "http"
         || url.host_str() != Some("127.0.0.1")
-        || url.port_or_known_default() != Some(8082)
+        || !url.port_or_known_default().map(|port| port > 1024).unwrap_or(false)
         || url.path() != "/api/v1/collective"
         || url.query().is_some()
         || url.fragment().is_some()
@@ -76,7 +76,7 @@ fn coordinator_base(value: &str) -> io::Result<String> {
         || url.password().is_some()
     {
         return Err(io::Error::other(
-            "coordinatorUrl must be the local coordinator at http://127.0.0.1:8082/api/v1/collective",
+            "coordinatorUrl must point to a local 127.0.0.1 coordinator on a non-privileged port",
         ));
     }
     Ok(value.trim_end_matches('/').to_string())
@@ -705,6 +705,131 @@ mod tests {
         let mut unsafe_upstream = config;
         unsafe_upstream["stratumUpstream"] = "192.0.2.1:3338".into();
         assert!(IngestConfig::from_value(&unsafe_upstream).is_err());
+    }
+
+    fn read_http_request(stream: &mut TcpStream) -> io::Result<(String, Value)> {
+        let mut reader = BufReader::new(stream.try_clone()?);
+        let mut request_line = String::new();
+        reader.read_line(&mut request_line)?;
+        let mut length = 0_usize;
+        loop {
+            let mut line = String::new();
+            if reader.read_line(&mut line)? == 0 || line == "\\r\\n" {
+                break;
+            }
+            if let Some((key, value)) = line.split_once(':') {
+                if key.eq_ignore_ascii_case("content-length") {
+                    length = value.trim().parse().unwrap_or(0);
+                }
+            }
+        }
+        let mut body = vec![0_u8; length];
+        reader.read_exact(&mut body)?;
+        let body: Value = serde_json::from_slice(&body).map_err(io::Error::other)?;
+        Ok((request_line, body))
+    }
+
+    fn reply_http(stream: &mut TcpStream, body: Value) -> io::Result<()> {
+        let encoded = serde_json::to_vec(&body)?;
+        write!(
+            stream,
+            "HTTP/1.1 200 OK\\r\\nContent-Type: application/json\\r\\nContent-Length: {}\\r\\nConnection: close\\r\\n\\r\\n",
+            encoded.len()
+        )?;
+        stream.write_all(&encoded)?;
+        stream.flush()
+    }
+
+    #[test]
+    fn authenticated_v1_proxy_forwards_only_registered_miners() {
+        let coordinator = TcpListener::bind("127.0.0.1:0").unwrap();
+        let coordinator_port = coordinator.local_addr().unwrap().port();
+        let coordinator_worker = thread::spawn(move || {
+            let (mut stream, _) = coordinator.accept().unwrap();
+            let (line, body) = read_http_request(&mut stream).unwrap();
+            assert!(line.starts_with("POST /api/v1/collective/internal/authorize "));
+            assert_eq!(body["participantId"], "0123456789abcdef0123456789abcdef");
+            assert_eq!(body["stratumPassword"], "a".repeat(64));
+            reply_http(&mut stream, json!({
+                "authorized":true,
+                "participantId":"0123456789abcdef0123456789abcdef",
+                "coin":"btc"
+            })).unwrap();
+        });
+
+        let upstream = TcpListener::bind("127.0.0.1:0").unwrap();
+        let upstream_address = upstream.local_addr().unwrap();
+        let upstream_worker = thread::spawn(move || {
+            let (stream, _) = upstream.accept().unwrap();
+            let mut reader = BufReader::new(stream.try_clone().unwrap());
+            let mut writer = stream;
+            let mut line = String::new();
+            reader.read_line(&mut line).unwrap();
+            assert!(line.contains("mining.subscribe"));
+            writer.write_all(b"{\\"id\\":1,\\"result\\":[[],\\"abcd\\",4],\\"error\\":null}\\n").unwrap();
+            writer.flush().unwrap();
+
+            line.clear();
+            reader.read_line(&mut line).unwrap();
+            assert!(line.contains("mining.authorize"));
+            writer.write_all(b"{\\"id\\":2,\\"result\\":true,\\"error\\":null}\\n").unwrap();
+            writer.flush().unwrap();
+
+            line.clear();
+            reader.read_line(&mut line).unwrap();
+            assert!(line.contains("mining.submit"));
+        });
+
+        let proxy_listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let proxy_address = proxy_listener.local_addr().unwrap();
+        let config = Arc::new(IngestConfig {
+            listen: proxy_address,
+            upstream: upstream_address,
+            coordinator_base: format!("http://127.0.0.1:{coordinator_port}/api/v1/collective"),
+            backend_token: "b".repeat(64),
+            share_log_root: std::env::temp_dir(),
+            cursor_path: std::env::temp_dir().join("bdl-collective-test-cursor.json"),
+        });
+        let (sender, receiver) = mpsc::sync_channel::<TcpStream>(1);
+        let worker_config = config.clone();
+        let worker = thread::spawn(move || {
+            let stream = receiver.recv().unwrap();
+            proxy_connection(stream, worker_config.upstream, worker_config).unwrap();
+        });
+        let (client, _) = {
+            let listener = proxy_listener;
+            let handle = thread::spawn(move || {
+                let (stream, _) = listener.accept().unwrap();
+                sender.send(stream).unwrap();
+            });
+            let client = TcpStream::connect(proxy_address).unwrap();
+            handle.join().unwrap();
+            (client, ())
+        };
+        let mut reader = BufReader::new(client.try_clone().unwrap());
+        let mut writer = client;
+        writer.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
+        writer.write_all(b"{\\"id\\":1,\\"method\\":\\"mining.subscribe\\",\\"params\\":[\\"BDLMinerV2\\"]}\\n").unwrap();
+        writer.flush().unwrap();
+        let mut response = String::new();
+        reader.read_line(&mut response).unwrap();
+        assert!(response.contains("\\"id\\":1"));
+
+        writer.write_all(format!(
+            "{{\\"id\\":2,\\"method\\":\\"mining.authorize\\",\\"params\\":[\\"0123456789abcdef0123456789abcdef.gamma601\\",\\"{}\\"]}}\\n",
+            "a".repeat(64)
+        ).as_bytes()).unwrap();
+        writer.flush().unwrap();
+        response.clear();
+        reader.read_line(&mut response).unwrap();
+        assert!(response.contains("\\"result\\":true"));
+
+        writer.write_all(b"{\\"id\\":10,\\"method\\":\\"mining.submit\\",\\"params\\":[]}\\n").unwrap();
+        writer.flush().unwrap();
+        coordinator_worker.join().unwrap();
+        upstream_worker.join().unwrap();
+        writer.shutdown(std::net::Shutdown::Both).unwrap();
+        worker.join().unwrap();
     }
 
     #[test]
