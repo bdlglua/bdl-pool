@@ -1,4 +1,4 @@
-use bdl_pool_services::{api::PoolApi, collect, collective_api, http, install, presence};
+use bdl_pool_services::{api::PoolApi, collect, collective_api, collective_ingest, http, install, presence};
 use serde_json::Value;
 use std::{env, fs, io, path::PathBuf, sync::Arc};
 
@@ -58,6 +58,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             })?;
         }
+        "collective-ingest" => collective_ingest::run(&config)?,
         "collective" => {
             let port = option("--port")
                 .unwrap_or_else(|| "8082".into())
@@ -76,7 +77,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "presence" => presence::run(&config, args.iter().any(|a| a == "--once"))?,
         _ => {
             return Err(
-                "usage: bdl-pool-services api|presence|collective|collective-init|collect|install"
+                "usage: bdl-pool-services api|presence|collective|collective-init|collective-ingest|collect|install"
                     .into(),
             )
         }
