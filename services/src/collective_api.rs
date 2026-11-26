@@ -239,7 +239,10 @@ impl LedgerState {
                 if !SUPPORTED_COINS.contains(&coin)
                     || !valid_id(block_id, 128)
                     || candidate["height"].as_u64().is_none()
-                    || candidate["rewardAtoms"].as_u64().filter(|n| *n > 0).is_none()
+                    || candidate["rewardAtoms"]
+                        .as_u64()
+                        .filter(|n| *n > 0)
+                        .is_none()
                     || cutoff == 0
                     || cutoff >= self.next_sequence
                 {
@@ -252,11 +255,15 @@ impl LedgerState {
                 {
                     return Err(io::Error::other("duplicate or excessive block candidates"));
                 }
-                let has_work = self.shares.get(coin).map(|shares| {
-                    shares.iter().any(|share| share.sequence <= cutoff)
-                }).unwrap_or(false);
+                let has_work = self
+                    .shares
+                    .get(coin)
+                    .map(|shares| shares.iter().any(|share| share.sequence <= cutoff))
+                    .unwrap_or(false);
                 if !has_work {
-                    return Err(io::Error::other("block candidate has no eligible accepted work"));
+                    return Err(io::Error::other(
+                        "block candidate has no eligible accepted work",
+                    ));
                 }
                 self.candidates.insert(key, candidate.clone());
             }
@@ -268,7 +275,9 @@ impl LedgerState {
                     .as_str()
                     .ok_or_else(|| io::Error::other("invalid orphan block ID"))?;
                 let key = Self::block_key(coin, block_id);
-                let candidate = self.candidates.get_mut(&key)
+                let candidate = self
+                    .candidates
+                    .get_mut(&key)
                     .ok_or_else(|| io::Error::other("orphaned candidate does not exist"))?;
                 if candidate["status"] != "pending" || self.blocks.contains_key(&key) {
                     return Err(io::Error::other("candidate cannot be orphaned"));
@@ -462,7 +471,9 @@ impl Coordinator {
             ("POST", "/api/v1/collective/internal/shares") => self.record_share(request),
             ("POST", "/api/v1/collective/internal/candidates") => self.record_candidate(request),
             ("GET", "/api/v1/collective/internal/candidates") => self.pending_candidates(request),
-            ("POST", "/api/v1/collective/internal/candidates/orphan") => self.orphan_candidate(request),
+            ("POST", "/api/v1/collective/internal/candidates/orphan") => {
+                self.orphan_candidate(request)
+            }
             ("POST", "/api/v1/collective/internal/blocks") => self.record_block(request),
             _ => Err(CoordinatorError::new(
                 404,
@@ -676,25 +687,41 @@ impl Coordinator {
             .map_err(|_| io_error("Ledger lock is unavailable."))?;
         let key = LedgerState::block_key(coin, block_id);
         if let Some(existing) = ledger.state.candidates.get(&key) {
-            if existing["height"] == height && existing["rewardAtoms"] == reward_atoms
+            if existing["height"] == height
+                && existing["rewardAtoms"] == reward_atoms
                 && existing["status"] == "pending"
             {
                 return Ok(existing.clone());
             }
-            return Err(conflict("This block candidate already exists with different data or status."));
+            return Err(conflict(
+                "This block candidate already exists with different data or status.",
+            ));
         }
         if ledger.state.blocks.contains_key(&key) {
             return Err(conflict("This block already has a mature allocation."));
         }
         let share_sequence_cutoff = ledger.state.next_sequence.saturating_sub(1);
-        let has_work = ledger.state.shares.get(coin).map(|shares| {
-            shares.iter().any(|share| share.sequence <= share_sequence_cutoff)
-        }).unwrap_or(false);
+        let has_work = ledger
+            .state
+            .shares
+            .get(coin)
+            .map(|shares| {
+                shares
+                    .iter()
+                    .any(|share| share.sequence <= share_sequence_cutoff)
+            })
+            .unwrap_or(false);
         if !has_work {
-            return Err(conflict("No accepted work exists for this coin at candidate discovery."));
+            return Err(conflict(
+                "No accepted work exists for this coin at candidate discovery.",
+            ));
         }
         if ledger.state.candidates.len() >= MAX_BLOCKS {
-            return Err(CoordinatorError::new(507, "candidate_limit", "Block candidate capacity reached."));
+            return Err(CoordinatorError::new(
+                507,
+                "candidate_limit",
+                "Block candidate capacity reached.",
+            ));
         }
         let candidate = json!({
             "coin":coin,
@@ -720,7 +747,10 @@ impl Coordinator {
             .journal
             .lock()
             .map_err(|_| io_error("Ledger lock is unavailable."))?;
-        let candidates: Vec<Value> = ledger.state.candidates.values()
+        let candidates: Vec<Value> = ledger
+            .state
+            .candidates
+            .values()
             .filter(|candidate| candidate["status"] == "pending")
             .cloned()
             .collect();
@@ -743,13 +773,19 @@ impl Coordinator {
             .map_err(|_| io_error("Ledger lock is unavailable."))?;
         let key = LedgerState::block_key(coin, block_id);
         let Some(candidate) = ledger.state.candidates.get(&key) else {
-            return Err(CoordinatorError::new(404, "candidate_not_found", "Block candidate not found."));
+            return Err(CoordinatorError::new(
+                404,
+                "candidate_not_found",
+                "Block candidate not found.",
+            ));
         };
         if candidate["status"] == "orphaned" {
             return Ok(candidate.clone());
         }
         if candidate["status"] != "pending" || ledger.state.blocks.contains_key(&key) {
-            return Err(conflict("A mature or already allocated candidate cannot be orphaned."));
+            return Err(conflict(
+                "A mature or already allocated candidate cannot be orphaned.",
+            ));
         }
         let event = json!({
             "type":"block_candidate_orphaned",
@@ -757,10 +793,15 @@ impl Coordinator {
             "blockId":block_id,
             "orphanedAt":Utc::now().to_rfc3339()
         });
-        ledger.append(&event).map_err(|_| {
-            io_error("Orphaned block candidate could not be committed.")
-        })?;
-        Ok(ledger.state.candidates.get(&key).cloned().unwrap_or(Value::Null))
+        ledger
+            .append(&event)
+            .map_err(|_| io_error("Orphaned block candidate could not be committed."))?;
+        Ok(ledger
+            .state
+            .candidates
+            .get(&key)
+            .cloned()
+            .unwrap_or(Value::Null))
     }
 
     fn record_block(&self, request: &Request) -> Result<Value> {
@@ -807,12 +848,19 @@ impl Coordinator {
             conflict("Block has no saved candidate snapshot; PPLNS cutoff cannot be verified.")
         })?;
         if candidate["status"] != "pending" || candidate["rewardAtoms"] != reward_atoms {
-            return Err(conflict("Mature block does not match its saved candidate snapshot."));
+            return Err(conflict(
+                "Mature block does not match its saved candidate snapshot.",
+            ));
         }
         let share_sequence_cutoff = candidate["shareSequenceCutoff"]
             .as_u64()
             .ok_or_else(|| io_error("Saved block candidate has an invalid share cutoff."))?;
-        let shares = ledger.state.shares.get(coin).cloned().unwrap_or_default()
+        let shares = ledger
+            .state
+            .shares
+            .get(coin)
+            .cloned()
+            .unwrap_or_default()
             .into_iter()
             .filter(|share| share.sequence <= share_sequence_cutoff)
             .collect::<Vec<_>>();
@@ -1120,8 +1168,14 @@ mod tests {
                 json!({"coin":"btc","payoutAddress":"1BoatSLRHtKNngkdXEeobR76b53LETtpyT"}),
             ))
         };
-        let alice = create().data["participant"]["id"].as_str().unwrap().to_string();
-        let bob = create().data["participant"]["id"].as_str().unwrap().to_string();
+        let alice = create().data["participant"]["id"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        let bob = create().data["participant"]["id"]
+            .as_str()
+            .unwrap()
+            .to_string();
 
         let accepted_alice = c.dispatch(&request(
             "POST",
