@@ -7,6 +7,8 @@
 
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
+#[cfg(unix)]
+use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
 use std::{
     collections::BTreeMap,
     fs::{self, File, OpenOptions},
@@ -18,8 +20,6 @@ use std::{
     time::Duration,
 };
 use url::Url;
-#[cfg(unix)]
-use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
 
 const MAX_STRATUM_LINE: usize = 16 * 1024;
 const MAX_SHARELOG_LINE: usize = 16 * 1024;
@@ -55,9 +55,9 @@ fn valid_hex_secret(value: &str) -> bool {
 }
 
 fn socket_address(value: &str, loopback_only: bool) -> io::Result<SocketAddr> {
-    let address: SocketAddr = value
-        .parse()
-        .map_err(|_| io::Error::other("Stratum listen/upstream must be an IP:port socket address"))?;
+    let address: SocketAddr = value.parse().map_err(|_| {
+        io::Error::other("Stratum listen/upstream must be an IP:port socket address")
+    })?;
     if address.port() == 0 || (loopback_only && !address.ip().is_loopback()) {
         return Err(io::Error::other("Invalid Stratum socket address"));
     }
@@ -87,16 +87,22 @@ impl IngestConfig {
         let listen = socket_address(&config_string(config, "stratumListen")?, false)?;
         let upstream = socket_address(&config_string(config, "stratumUpstream")?, true)?;
         if listen == upstream {
-            return Err(io::Error::other("Stratum proxy and CKPool cannot use the same socket"));
+            return Err(io::Error::other(
+                "Stratum proxy and CKPool cannot use the same socket",
+            ));
         }
         let coordinator_base = coordinator_base(&config_string(config, "coordinatorUrl")?)?;
         let backend_token = config_string(config, "backendToken")?;
         if !valid_hex_secret(&backend_token) {
-            return Err(io::Error::other("backendToken must be a 32-byte lowercase hex token"));
+            return Err(io::Error::other(
+                "backendToken must be a 32-byte lowercase hex token",
+            ));
         }
         let share_log_root = PathBuf::from(config_string(config, "shareLogDirectory")?);
         if !share_log_root.is_absolute() {
-            return Err(io::Error::other("shareLogDirectory must be an absolute path"));
+            return Err(io::Error::other(
+                "shareLogDirectory must be an absolute path",
+            ));
         }
         let cursor_path = PathBuf::from(config_string(config, "cursorPath")?);
         if !cursor_path.is_absolute() {
@@ -126,9 +132,9 @@ fn participant_from_credentials(username: &str, password: &str) -> Option<String
             .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
         || worker.len() > 48
         || worker.contains('.')
-        || !worker.bytes().all(|byte| {
-            byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_')
-        })
+        || !worker
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
     {
         return None;
     }
@@ -170,7 +176,9 @@ fn unauthorized_response(id: &Value) -> Vec<u8> {
         "result":false,
         "error":[24,"Unauthorized worker",null]
     }))
-    .unwrap_or_else(|_| b"{\"id\":null,\"result\":false,\"error\":[24,\"Unauthorized worker\",null]}".to_vec());
+    .unwrap_or_else(|_| {
+        b"{\"id\":null,\"result\":false,\"error\":[24,\"Unauthorized worker\",null]}".to_vec()
+    });
     line.push(b'\n');
     line
 }
@@ -189,7 +197,10 @@ fn read_bounded_line<R: BufRead>(
         let newline = buffer.iter().position(|byte| *byte == b'\n');
         let count = newline.map(|index| index + 1).unwrap_or(buffer.len());
         if output.len().saturating_add(count) > limit {
-            return Err(io::Error::new(io::ErrorKind::InvalidData, "Stratum line exceeds limit"));
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Stratum line exceeds limit",
+            ));
         }
         output.extend_from_slice(&buffer[..count]);
         reader.consume(count);
@@ -200,7 +211,9 @@ fn read_bounded_line<R: BufRead>(
 }
 
 fn stratum_method(line: &[u8]) -> Option<(String, Value)> {
-    let text = std::str::from_utf8(line).ok()?.trim_end_matches(['\r', '\n']);
+    let text = std::str::from_utf8(line)
+        .ok()?
+        .trim_end_matches(['\r', '\n']);
     let value: Value = serde_json::from_str(text).ok()?;
     let method = value.get("method")?.as_str()?.to_string();
     Some((method, value))
@@ -248,8 +261,12 @@ fn proxy_connection(
             }
             auth_attempted = true;
             let params = value["params"].as_array();
-            let username = params.and_then(|items| items.first()).and_then(Value::as_str);
-            let password = params.and_then(|items| items.get(1)).and_then(Value::as_str);
+            let username = params
+                .and_then(|items| items.first())
+                .and_then(Value::as_str);
+            let password = params
+                .and_then(|items| items.get(1))
+                .and_then(Value::as_str);
             let participant_id = username
                 .zip(password)
                 .and_then(|(user, pass)| participant_from_credentials(user, pass));
@@ -428,8 +445,7 @@ fn read_cursors(path: &Path) -> io::Result<BTreeMap<String, u64>> {
         return Err(io::Error::other("share cursor path must be a regular file"));
     }
     let bytes = fs::read(path)?;
-    let value: BTreeMap<String, u64> =
-        serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+    let value: BTreeMap<String, u64> = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
     Ok(value)
 }
 
@@ -552,11 +568,15 @@ fn process_sharelog_file(
 fn process_sharelogs(config: &IngestConfig) -> io::Result<usize> {
     let root_metadata = fs::symlink_metadata(&config.share_log_root)?;
     if root_metadata.file_type().is_symlink() || !root_metadata.is_dir() {
-        return Err(io::Error::other("shareLogDirectory must be a real directory"));
+        return Err(io::Error::other(
+            "shareLogDirectory must be a real directory",
+        ));
     }
     let root = config.share_log_root.canonicalize()?;
     if root_metadata.file_type().is_symlink() || !root_metadata.is_dir() {
-        return Err(io::Error::other("shareLogDirectory must be a real directory"));
+        return Err(io::Error::other(
+            "shareLogDirectory must be a real directory",
+        ));
     }
     let mut files = Vec::new();
     collect_sharelog_files(&root, &root, 0, &mut files)?;
@@ -564,7 +584,9 @@ fn process_sharelogs(config: &IngestConfig) -> io::Result<usize> {
 
     let mut cursors = read_cursors(&config.cursor_path)?;
     if cursors.len() > MAX_LOG_FILES {
-        return Err(io::Error::other("share cursor index exceeds the configured file limit"));
+        return Err(io::Error::other(
+            "share cursor index exceeds the configured file limit",
+        ));
     }
     let mut remaining = MAX_RECORDS_PER_POLL;
     let mut processed = 0;
@@ -591,7 +613,9 @@ pub fn run(value: &Value) -> io::Result<()> {
     let config = IngestConfig::from_value(value)?;
     let root_meta = fs::symlink_metadata(&config.share_log_root)?;
     if root_meta.file_type().is_symlink() || !root_meta.is_dir() {
-        return Err(io::Error::other("shareLogDirectory must be a real directory"));
+        return Err(io::Error::other(
+            "shareLogDirectory must be a real directory",
+        ));
     }
     let root = config.share_log_root.canonicalize()?;
     let mut collector_config = config.clone();
@@ -629,8 +653,12 @@ mod tests {
         );
         assert!(participant_from_credentials(id, "x").is_none());
         assert!(participant_from_credentials("not-an-id", &"a".repeat(64)).is_none());
-        assert!(participant_from_credentials(&format!("{id}.bad.worker"), &"a".repeat(64)).is_none());
-        assert!(participant_from_credentials(&format!("{id}.bad worker"), &"a".repeat(64)).is_none());
+        assert!(
+            participant_from_credentials(&format!("{id}.bad.worker"), &"a".repeat(64)).is_none()
+        );
+        assert!(
+            participant_from_credentials(&format!("{id}.bad worker"), &"a".repeat(64)).is_none()
+        );
     }
 
     #[test]
@@ -701,12 +729,12 @@ mod tests {
         });
         fs::write(&file, serde_json::to_vec(&record).unwrap()).unwrap();
         let config = IngestConfig {
-            listen:"127.0.0.1:3337".parse().unwrap(),
-            upstream:"127.0.0.1:3338".parse().unwrap(),
-            coordinator_base:"http://127.0.0.1:8082/api/v1/collective".into(),
-            backend_token:"a".repeat(64),
-            share_log_root:log_root.clone(),
-            cursor_path:root.path().join("cursor.json"),
+            listen: "127.0.0.1:3337".parse().unwrap(),
+            upstream: "127.0.0.1:3338".parse().unwrap(),
+            coordinator_base: "http://127.0.0.1:8082/api/v1/collective".into(),
+            backend_token: "a".repeat(64),
+            share_log_root: log_root.clone(),
+            cursor_path: root.path().join("cursor.json"),
         };
         assert_eq!(process_sharelogs(&config).unwrap(), 0);
         let cursors = read_cursors(&config.cursor_path).unwrap();
