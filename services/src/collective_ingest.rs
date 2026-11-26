@@ -248,76 +248,82 @@ fn proxy_connection(
     let mut line = Vec::with_capacity(256);
     let mut client_writer = client;
 
-    loop {
-        if !read_bounded_line(&mut client_reader, &mut line, MAX_STRATUM_LINE)? {
-            break;
-        }
-        let Some((method, value)) = stratum_method(&line) else {
-            break;
-        };
-        if method == "mining.authorize" {
-            if authorized || auth_attempted {
-                let id = value.get("id").unwrap_or(&Value::Null);
-                let _ = client_writer.write_all(&unauthorized_response(id));
+    // Always close both sockets and join the forwarding thread, including on
+    // read timeouts and write errors. A failed pre-auth handshake must not
+    // leave a detached CKPool connection behind.
+    let proxy_result: io::Result<()> = (|| {
+        loop {
+            if !read_bounded_line(&mut client_reader, &mut line, MAX_STRATUM_LINE)? {
                 break;
             }
-            auth_attempted = true;
-            let params = value["params"].as_array();
-            let username = params
-                .and_then(|items| items.first())
-                .and_then(Value::as_str);
-            let password = params
-                .and_then(|items| items.get(1))
-                .and_then(Value::as_str);
-            let participant_id = username
-                .zip(password)
-                .and_then(|(user, pass)| participant_from_credentials(user, pass));
-            let valid = match (participant_id.as_deref(), password) {
-                (Some(participant_id), Some(password)) => {
-                    coordinator_authorize(&config, participant_id, password)
-                }
-                _ => false,
+            let Some((method, value)) = stratum_method(&line) else {
+                break;
             };
-            if !valid {
-                let id = value.get("id").unwrap_or(&Value::Null);
-                let _ = client_writer.write_all(&unauthorized_response(id));
-                let _ = client_writer.flush();
-                break;
+            if method == "mining.authorize" {
+                if authorized || auth_attempted {
+                    let id = value.get("id").unwrap_or(&Value::Null);
+                    let _ = client_writer.write_all(&unauthorized_response(id));
+                    break;
+                }
+                auth_attempted = true;
+                let params = value["params"].as_array();
+                let username = params
+                    .and_then(|items| items.first())
+                    .and_then(Value::as_str);
+                let password = params
+                    .and_then(|items| items.get(1))
+                    .and_then(Value::as_str);
+                let participant_id = username
+                    .zip(password)
+                    .and_then(|(user, pass)| participant_from_credentials(user, pass));
+                let valid = match (participant_id.as_deref(), password) {
+                    (Some(participant_id), Some(password)) => {
+                        coordinator_authorize(&config, participant_id, password)
+                    }
+                    _ => false,
+                };
+                if !valid {
+                    let id = value.get("id").unwrap_or(&Value::Null);
+                    let _ = client_writer.write_all(&unauthorized_response(id));
+                    let _ = client_writer.flush();
+                    break;
+                }
+                authorized = true;
+                client_reader
+                    .get_ref()
+                    .set_read_timeout(Some(Duration::from_secs(900)))?;
+                upstream_writer.write_all(&line)?;
+                upstream_writer.flush()?;
+                continue;
             }
-            authorized = true;
-            client_reader
-                .get_ref()
-                .set_read_timeout(Some(Duration::from_secs(900)))?;
+
+            if !authorized {
+                preauth_messages += 1;
+                if preauth_messages > 8
+                    || !matches!(
+                        method.as_str(),
+                        "mining.subscribe"
+                            | "mining.configure"
+                            | "mining.suggest_difficulty"
+                            | "mining.extranonce.subscribe"
+                    )
+                {
+                    let id = value.get("id").unwrap_or(&Value::Null);
+                    let _ = client_writer.write_all(&unauthorized_response(id));
+                    let _ = client_writer.flush();
+                    break;
+                }
+            }
             upstream_writer.write_all(&line)?;
             upstream_writer.flush()?;
-            continue;
         }
-
-        if !authorized {
-            preauth_messages += 1;
-            if preauth_messages > 8
-                || !matches!(
-                    method.as_str(),
-                    "mining.subscribe"
-                        | "mining.configure"
-                        | "mining.suggest_difficulty"
-                        | "mining.extranonce.subscribe"
-                )
-            {
-                let id = value.get("id").unwrap_or(&Value::Null);
-                let _ = client_writer.write_all(&unauthorized_response(id));
-                let _ = client_writer.flush();
-                break;
-            }
-        }
-        upstream_writer.write_all(&line)?;
-        upstream_writer.flush()?;
-    }
+        Ok(())
+    })();
 
     let _ = upstream_writer.shutdown(std::net::Shutdown::Both);
     let _ = client_writer.shutdown(std::net::Shutdown::Both);
     let _ = downstream.join();
-    Ok(())
+    proxy_result
 }
 
 fn serve_proxy(config: IngestConfig) -> io::Result<()> {
