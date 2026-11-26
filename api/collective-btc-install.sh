@@ -162,7 +162,7 @@ BindReadOnlyPaths=$ckpool_config
 BindPaths=$share_logs
 ReadWritePaths=$runtime_directory
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
-MemoryMax=384M
+MemoryMax=256M
 TasksMax=64
 LimitNOFILE=512
 
@@ -195,8 +195,8 @@ BindReadOnlyPaths=$service_bin
 BindReadOnlyPaths=$ingest_config
 BindReadOnlyPaths=$share_logs
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
-MemoryMax=192M
-TasksMax=64
+MemoryMax=96M
+TasksMax=32
 LimitNOFILE=128
 
 [Install]
