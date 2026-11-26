@@ -757,13 +757,13 @@ mod tests {
     }
     fn request(method: &str, target: &str, token: &str, body: Value) -> Request {
         Request {
-            method:method.into(),
-            target:target.into(),
-            headers:vec![
-                ("authorization".into(),format!("Bearer {token}")),
-                ("content-type".into(),"application/json".into())
+            method: method.into(),
+            target: target.into(),
+            headers: vec![
+                ("authorization".into(), format!("Bearer {token}")),
+                ("content-type".into(), "application/json".into()),
             ],
-            body:serde_json::to_vec(&body).unwrap()
+            body: serde_json::to_vec(&body).unwrap(),
         }
     }
     #[test]
