@@ -124,7 +124,7 @@ def build_config(
         # can never be mistaken for collective-pool rewards.
         "startHeight": tip_height + 1,
         "cursorPath": str(cursor_path),
-        "pollIntervalSeconds": 15,
+        "pollIntervalSeconds": 5,
     }
 
 
