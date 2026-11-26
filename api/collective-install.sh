@@ -25,7 +25,7 @@ for tool in cargo sudo systemctl ss curl; do
   command -v "$tool" >/dev/null || { echo "Missing tool: $tool" >&2; exit 1; }
 done
 
-cargo build --locked --release --manifest-path "$root/services/Cargo.toml"
+CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-1}" cargo build --locked --release --manifest-path "$root/services/Cargo.toml"
 [[ -x "$bin" ]] || { echo 'Coordinator binary is missing after build.' >&2; exit 1; }
 
 if [[ ! -e "$config" ]]; then
