@@ -1,4 +1,6 @@
-use bdl_pool_services::{api::PoolApi, collect, collective_api, collective_ingest, http, install, presence};
+use bdl_pool_services::{
+    api::PoolApi, collect, collective_api, collective_ingest, http, install, presence,
+};
 use serde_json::Value;
 use std::{env, fs, io, path::PathBuf, sync::Arc};
 
