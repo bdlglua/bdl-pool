@@ -8,7 +8,7 @@ umask 077
   echo 'Run this installer as the bdl account, without sudo.' >&2
   exit 1
 }
-root="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
+root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 [[ "$root" == /home/bdl/bdl-pool-site ]] || {
   echo 'Repository must be /home/bdl/bdl-pool-site.' >&2
   exit 1
@@ -57,7 +57,7 @@ if ! curl --silent --show-error --fail \
   exit 1
 fi
 
-if [[ -z "\${BDL_COLLECTIVE_BTC_ADDRESS:-}" ]]; then
+if [[ -z "${BDL_COLLECTIVE_BTC_ADDRESS:-}" ]]; then
   read -r -p 'Common BTC mainnet reward address for the collective pool: ' BDL_COLLECTIVE_BTC_ADDRESS
 fi
 [[ -n "$BDL_COLLECTIVE_BTC_ADDRESS" ]] || {
@@ -65,6 +65,8 @@ fi
   exit 1
 }
 
+mkdir -p "$HOME/.local/state"
+chmod 700 "$HOME/.local/state"
 temporary="$(mktemp -d "$HOME/.local/state/bdl-collective-btc-install.XXXXXX")"
 trap 'rm -rf -- "$temporary"' EXIT
 config_candidate="$temporary/collective.conf"
@@ -183,8 +185,7 @@ ExecStart=$service_bin collective-ingest --config $ingest_config
 Restart=on-failure
 RestartSec=5
 UMask=0077
-StateDirectory=bdl-pool-collective
-StateDirectoryMode=0700
+ReadWritePaths=/var/lib/bdl-pool-collective
 NoNewPrivileges=true
 PrivateTmp=true
 PrivateDevices=true
