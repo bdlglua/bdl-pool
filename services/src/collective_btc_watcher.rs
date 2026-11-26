@@ -283,11 +283,7 @@ fn coinbase_reward_for_address(
     Ok(Some(reward_atoms))
 }
 
-fn post_mature_block(
-    config: &WatchConfig,
-    block_hash: &str,
-    reward_atoms: u64,
-) -> io::Result<()> {
+fn post_mature_block(config: &WatchConfig, block_hash: &str, reward_atoms: u64) -> io::Result<()> {
     let response = ureq::post(&format!("{}/internal/blocks", config.coordinator_url))
         .timeout(Duration::from_secs(5))
         .set("Authorization", &format!("Bearer {}", config.backend_token))
