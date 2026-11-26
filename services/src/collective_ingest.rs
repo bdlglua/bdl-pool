@@ -154,9 +154,9 @@ fn coordinator_authorize(
         .set("Authorization", &format!("Bearer {}", config.backend_token))
         .set("Content-Type", "application/json")
         .send_json(json!({
-        "participantId":participant_id,
-        "stratumPassword":stratum_password
-    }));
+            "participantId":participant_id,
+            "stratumPassword":stratum_password
+        }));
     match response {
         Ok(response) => response
             .into_json::<Value>()
@@ -417,11 +417,11 @@ fn post_accepted_share(config: &IngestConfig, share: &AcceptedShare) -> io::Resu
         .set("Authorization", &format!("Bearer {}", config.backend_token))
         .set("Content-Type", "application/json")
         .send_json(json!({
-        "coin":"btc",
-        "shareId":share.share_id,
-        "participantId":share.participant_id,
-        "workUnits":share.work_units
-    }));
+            "coin":"btc",
+            "shareId":share.share_id,
+            "participantId":share.participant_id,
+            "workUnits":share.work_units
+        }));
     match result {
         Ok(response) if (200..300).contains(&response.status()) => Ok(()),
         // A 409 means this is an already-recorded share or an account which
