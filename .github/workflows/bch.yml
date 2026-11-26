@@ -23,7 +23,7 @@ jobs:
       - run: cargo clippy --locked --manifest-path services/Cargo.toml --all-targets -- -D warnings
       - run: cargo test --locked --manifest-path services/Cargo.toml
       - run: cargo build --locked --release --manifest-path services/Cargo.toml
-      - run: bash -n api/install.sh monitoring/publish.sh
+      - run: bash -n api/install.sh api/collective-install.sh monitoring/publish.sh
   python:
     runs-on: ubuntu-24.04
     steps:
