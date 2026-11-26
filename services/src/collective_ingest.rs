@@ -765,7 +765,9 @@ mod tests {
         let upstream_address = upstream.local_addr().unwrap();
         let upstream_worker = thread::spawn(move || {
             let (stream, _) = upstream.accept().unwrap();
-            stream.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
+            stream
+                .set_read_timeout(Some(Duration::from_secs(3)))
+                .unwrap();
             let mut reader = BufReader::new(stream);
             let mut line = String::new();
             reader.read_line(&mut line).unwrap();
@@ -801,7 +803,9 @@ mod tests {
         listener_worker.join().unwrap();
         let mut reader = BufReader::new(client.try_clone().unwrap());
         let mut writer = client;
-        writer.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
+        writer
+            .set_read_timeout(Some(Duration::from_secs(3)))
+            .unwrap();
         writer
             .write_all(b"{\"id\":1,\"method\":\"mining.subscribe\",\"params\":[\"BDLMinerV2\"]}\n")
             .unwrap();
