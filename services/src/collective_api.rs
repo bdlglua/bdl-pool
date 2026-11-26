@@ -1108,6 +1108,120 @@ mod tests {
     }
 
     #[test]
+    fn block_reward_uses_the_share_cutoff_saved_when_candidate_was_discovered() {
+        let root = TempDir::new().unwrap();
+        let cfg = config(root.path());
+        let c = Coordinator::open(cfg.clone()).unwrap();
+        let create = || {
+            c.dispatch(&request(
+                "POST",
+                "/api/v1/collective/admin/participants",
+                &"a".repeat(64),
+                json!({"coin":"btc","payoutAddress":"1BoatSLRHtKNngkdXEeobR76b53LETtpyT"}),
+            ))
+        };
+        let alice = create().data["participant"]["id"].as_str().unwrap().to_string();
+        let bob = create().data["participant"]["id"].as_str().unwrap().to_string();
+
+        let accepted_alice = c.dispatch(&request(
+            "POST",
+            "/api/v1/collective/internal/shares",
+            &"b".repeat(64),
+            json!({"coin":"btc","shareId":"before-block","participantId":alice,"workUnits":40}),
+        ));
+        assert_eq!(accepted_alice.data["sequence"], 1);
+
+        let candidate = c.dispatch(&request(
+            "POST",
+            "/api/v1/collective/internal/candidates",
+            &"b".repeat(64),
+            json!({"coin":"btc","blockId":"block-2","height":100,"rewardAtoms":100}),
+        ));
+        assert_eq!(candidate.status, 200);
+        assert_eq!(candidate.data["shareSequenceCutoff"], 1);
+
+        let accepted_bob = c.dispatch(&request(
+            "POST",
+            "/api/v1/collective/internal/shares",
+            &"b".repeat(64),
+            json!({"coin":"btc","shareId":"after-block","participantId":bob,"workUnits":60}),
+        ));
+        assert_eq!(accepted_bob.data["sequence"], 2);
+
+        let block = c.dispatch(&request(
+            "POST",
+            "/api/v1/collective/internal/blocks",
+            &"b".repeat(64),
+            json!({
+                "coin":"btc","blockId":"block-2","rewardAtoms":100,
+                "windowWorkUnits":100,"mature":true
+            }),
+        ));
+        assert_eq!(block.status, 200);
+        assert_eq!(block.data["shareSequenceCutoff"], 1);
+        assert_eq!(block.data["allocations"].as_array().unwrap().len(), 1);
+        assert_eq!(block.data["allocations"][0]["participantId"], alice);
+        assert_eq!(block.data["allocations"][0]["amountAtoms"], 100);
+        assert_eq!(block.data["status"], "awaiting_settlement");
+        drop(c);
+
+        let reopened = Coordinator::open(cfg).unwrap();
+        let candidates = reopened.dispatch(&request(
+            "GET",
+            "/api/v1/collective/internal/candidates",
+            &"b".repeat(64),
+            json!({}),
+        ));
+        assert_eq!(candidates.data["total"], 0);
+    }
+
+    #[test]
+    fn orphaned_candidate_is_removed_from_pending_queue_and_survives_restart() {
+        let root = TempDir::new().unwrap();
+        let cfg = config(root.path());
+        let c = Coordinator::open(cfg.clone()).unwrap();
+        let created = c.dispatch(&request(
+            "POST",
+            "/api/v1/collective/admin/participants",
+            &"a".repeat(64),
+            json!({"coin":"btc","payoutAddress":"1BoatSLRHtKNngkdXEeobR76b53LETtpyT"}),
+        ));
+        let id = created.data["participant"]["id"].as_str().unwrap();
+        let share = c.dispatch(&request(
+            "POST",
+            "/api/v1/collective/internal/shares",
+            &"b".repeat(64),
+            json!({"coin":"btc","shareId":"orphan-share","participantId":id,"workUnits":1}),
+        ));
+        assert_eq!(share.status, 200);
+        let candidate = c.dispatch(&request(
+            "POST",
+            "/api/v1/collective/internal/candidates",
+            &"b".repeat(64),
+            json!({"coin":"btc","blockId":"orphan-block","height":101,"rewardAtoms":50}),
+        ));
+        assert_eq!(candidate.status, 200);
+        let orphan = c.dispatch(&request(
+            "POST",
+            "/api/v1/collective/internal/candidates/orphan",
+            &"b".repeat(64),
+            json!({"coin":"btc","blockId":"orphan-block"}),
+        ));
+        assert_eq!(orphan.status, 200);
+        assert_eq!(orphan.data["status"], "orphaned");
+        drop(c);
+
+        let reopened = Coordinator::open(cfg).unwrap();
+        let pending = reopened.dispatch(&request(
+            "GET",
+            "/api/v1/collective/internal/candidates",
+            &"b".repeat(64),
+            json!({}),
+        ));
+        assert_eq!(pending.data["total"], 0);
+    }
+
+    #[test]
     fn public_status_does_not_expose_addresses_or_tokens() {
         let root = TempDir::new().unwrap();
         let c = Coordinator::open(config(root.path())).unwrap();
