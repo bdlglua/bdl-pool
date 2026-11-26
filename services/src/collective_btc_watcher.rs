@@ -284,7 +284,12 @@ fn coinbase_reward_for_address(
     Ok(Some(reward_atoms))
 }
 
-fn post_candidate(config: &WatchConfig, block_hash: &str, height: u64, reward_atoms: u64) -> io::Result<()> {
+fn post_candidate(
+    config: &WatchConfig,
+    block_hash: &str,
+    height: u64,
+    reward_atoms: u64,
+) -> io::Result<()> {
     let response = ureq::post(&format!("{}/internal/candidates", config.coordinator_url))
         .timeout(Duration::from_secs(5))
         .set("Authorization", &format!("Bearer {}", config.backend_token))
@@ -326,12 +331,15 @@ fn pending_candidates(config: &WatchConfig) -> io::Result<Vec<Value>> {
 }
 
 fn orphan_candidate(config: &WatchConfig, block_hash: &str) -> io::Result<()> {
-    let response = ureq::post(&format!("{}/internal/candidates/orphan", config.coordinator_url))
-        .timeout(Duration::from_secs(5))
-        .set("Authorization", &format!("Bearer {}", config.backend_token))
-        .set("Content-Type", "application/json")
-        .send_json(json!({"coin":"btc","blockId":block_hash}))
-        .map_err(|_| io::Error::other("coordinator could not mark orphaned block candidate"))?;
+    let response = ureq::post(&format!(
+        "{}/internal/candidates/orphan",
+        config.coordinator_url
+    ))
+    .timeout(Duration::from_secs(5))
+    .set("Authorization", &format!("Bearer {}", config.backend_token))
+    .set("Content-Type", "application/json")
+    .send_json(json!({"coin":"btc","blockId":block_hash}))
+    .map_err(|_| io::Error::other("coordinator could not mark orphaned block candidate"))?;
     let result: Value = response
         .into_json()
         .map_err(|_| io::Error::other("coordinator returned invalid orphan response"))?;
