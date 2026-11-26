@@ -25,7 +25,7 @@ root = Path.home()/'.local/state/bdl-pool-openport'
 if not (root/'v1/identity.json').is_file() or not (root/'v1/public.json').is_file():
     raise SystemExit('Effectuer d’abord le test OpenPort V1 pour garder son port.')
 # Do not reserve new profiles while a test still holds a profile lock.
-for name in ('v1', 'v2', 'api'):
+for name in ('v1', 'v2', 'api', 'collective'):
     if not (root/name).is_dir():
         continue
     active = subprocess.run(['systemctl', 'is-active', '--quiet', 'bdl-pool-openport@'+name+'.service']).returncode == 0
@@ -37,7 +37,7 @@ for name in ('v1', 'v2', 'api'):
                 raise SystemExit('Un essai '+name.upper()+' est encore actif. Attendre son arrêt, puis relancer l’installation.')
 client.verified_binary()
 identifiers, ports = set(), set()
-for name in ('v1', 'v2', 'api'):
+for name in ('v1', 'v2', 'api', 'collective'):
     profile = root/name; profile.mkdir(mode=0o700, exist_ok=True); profile.chmod(0o700)
     identity = client.credentials(profile)
     if identity['client_id'] in identifiers or identity['remote_port'] in ports:
@@ -81,7 +81,7 @@ PY
 sudo -v
 sudo install -m 644 "$temporary/bdl-pool-openport@.service" /etc/systemd/system/bdl-pool-openport@.service
 sudo systemctl daemon-reload
-for profile in v1 v2 api; do
+for profile in v1 v2 api collective; do
   sudo systemctl enable "bdl-pool-openport@$profile.service"
   sudo systemctl restart "bdl-pool-openport@$profile.service"
 done
