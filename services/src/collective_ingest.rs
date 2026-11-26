@@ -623,6 +623,7 @@ pub fn run(value: &Value) -> io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Read;
     use tempfile::TempDir;
 
     fn base_config(root: &Path) -> Value {
