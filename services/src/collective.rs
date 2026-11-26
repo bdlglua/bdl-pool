@@ -228,10 +228,11 @@ pub fn plan_pplns_reward(
         return Err(AccountingError::ArithmeticOverflow);
     }
     for index in remainder_order.into_iter().take(leftover) {
-        rows[index].2 = rows[index]
+        let next = rows[index]
             .2
             .checked_add(1)
             .ok_or(AccountingError::ArithmeticOverflow)?;
+        rows[index].2 = next;
     }
 
     let payouts = rows
