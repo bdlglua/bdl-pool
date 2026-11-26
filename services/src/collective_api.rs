@@ -832,6 +832,41 @@ mod tests {
     }
 
     #[test]
+    fn stratum_password_is_separate_from_private_dashboard_token() {
+        let root = TempDir::new().unwrap();
+        let c = Coordinator::open(config(root.path())).unwrap();
+        let created = c.dispatch(&request(
+            "POST",
+            "/api/v1/collective/admin/participants",
+            &"a".repeat(64),
+            json!({"coin":"btc","payoutAddress":"1BoatSLRHtKNngkdXEeobR76b53LETtpyT"}),
+        ));
+        assert_eq!(created.status, 200);
+        let id = created.data["participant"]["id"].as_str().unwrap();
+        let participant_token = created.data["participantToken"].as_str().unwrap();
+        let stratum_password = created.data["stratumPassword"].as_str().unwrap();
+        assert_ne!(participant_token, stratum_password);
+        let authorize = |password: &str| {
+            c.dispatch(&request(
+                "POST",
+                "/api/v1/collective/internal/authorize",
+                &"b".repeat(64),
+                json!({"participantId":id,"stratumPassword":password}),
+            ))
+        };
+        assert_eq!(authorize(stratum_password).data["authorized"], true);
+        assert_eq!(authorize(participant_token).data["authorized"], false);
+        assert_eq!(authorize(&"c".repeat(64)).data["authorized"], false);
+        let wrong_backend = c.dispatch(&request(
+            "POST",
+            "/api/v1/collective/internal/authorize",
+            &"d".repeat(64),
+            json!({"participantId":id,"stratumPassword":stratum_password}),
+        ));
+        assert_eq!(wrong_backend.status, 401);
+    }
+
+    #[test]
     fn only_backend_can_record_shares_and_duplicate_shares_are_rejected() {
         let root = TempDir::new().unwrap();
         let c = Coordinator::open(config(root.path())).unwrap();
