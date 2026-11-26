@@ -86,7 +86,7 @@ ingest_candidate="$temporary/btc-ingest.json"
 watch_candidate="$temporary/btc-watch.json"
 ckpool_verify_log="$temporary/ckpool-config-check.log"
 
-cargo build --locked --release --manifest-path "$root/services/Cargo.toml"
+CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-1}" cargo build --locked --release --manifest-path "$root/services/Cargo.toml"
 [[ -x "$service_bin" ]] || { echo 'Collective Rust service binary is missing after build.' >&2; exit 1; }
 
 python3 "$root/api/collective_btc_config.py" \
