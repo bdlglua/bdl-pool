@@ -99,6 +99,11 @@ fn configure_relay(settings: &mut Value, relay: &Value) -> io::Result<String> {
     settings["v1Port"] = relay["v1Port"].clone();
     settings["v2Port"] = relay["v2Port"].clone();
     settings["apiPublicPort"] = relay["apiPublicPort"].clone();
+    if let Some(port) = relay.get("collectivePort").filter(|value| {
+        value.as_u64().map(|p| (1..=65535).contains(&p)).unwrap_or(false)
+    }) {
+        settings["collectivePort"] = port.clone();
+    }
     let tls =
         format!("    tls {directory}/current/fullchain.pem {directory}/current/privkey.pem\n");
     Ok(tls)
