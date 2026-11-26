@@ -13,37 +13,65 @@ mkdir -p "$state_dir"
 chmod 700 "$state_dir"
 exec 9>"$state_dir/install.lock"
 flock -n 9 || { echo 'Une installation OpenPort est déjà en cours.' >&2; exit 1; }
+profiles=(v1 v2 api collective)
+if (($#)); then
+  profiles=("$@")
+fi
+for profile in "${profiles[@]}"; do
+  case "$profile" in v1|v2|api|bch|collective) ;; *)
+    echo "Profil OpenPort inconnu : $profile" >&2
+    exit 1
+    ;;
+  esac
+done
+
 temporary="$(mktemp -d)"
 trap 'rm -rf -- "$temporary"' EXIT
-python3 - "$script_dir" "$temporary/bdl-pool-openport@.service" <<'PY'
-import fcntl, importlib.util, subprocess, sys
+python3 - "$script_dir" "$temporary/bdl-pool-openport@.service" "${profiles[@]}" <<'PY'
+import fcntl, importlib.util, json, sys
 from pathlib import Path
-source, destination = map(Path, sys.argv[1:])
+source, destination = Path(sys.argv[1]), Path(sys.argv[2])
+selected = sys.argv[3:] or ['v1', 'v2', 'api', 'collective']
 spec = importlib.util.spec_from_file_location('client', source/'try-openport.py')
 client = importlib.util.module_from_spec(spec); spec.loader.exec_module(client)
 root = Path.home()/'.local/state/bdl-pool-openport'
-if not (root/'v1/identity.json').is_file() or not (root/'v1/public.json').is_file():
-    raise SystemExit('Effectuer d’abord le test OpenPort V1 pour garder son port.')
-# Do not reserve new profiles while a test still holds a profile lock.
-for name in ('v1', 'v2', 'api'):
-    if not (root/name).is_dir():
-        continue
-    active = subprocess.run(['systemctl', 'is-active', '--quiet', 'bdl-pool-openport@'+name+'.service']).returncode == 0
-    if not active:
-        with (root/name/'trial.lock').open('a') as lock:
-            try:
-                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except BlockingIOError:
-                raise SystemExit('Un essai '+name.upper()+' est encore actif. Attendre son arrêt, puis relancer l’installation.')
 client.verified_binary()
-identifiers, ports = set(), set()
-for name in ('v1', 'v2', 'api'):
-    profile = root/name; profile.mkdir(mode=0o700, exist_ok=True); profile.chmod(0o700)
-    identity = client.credentials(profile)
-    if identity['client_id'] in identifiers or identity['remote_port'] in ports:
-        raise SystemExit('OpenPort n’a pas attribué trois ports distincts. Aucun nouveau service n’a été démarré.')
-    identifiers.add(identity['client_id']); ports.add(identity['remote_port'])
-    print(name.upper()+': identité sauvegardée, port '+str(identity['remote_port'])+'.')
+identities, ports = set(), set()
+all_profiles = ('v1', 'v2', 'api', 'bch', 'collective')
+for name in all_profiles:
+    profile = root/name
+    identity_path = profile/'identity.json'
+    if name in selected:
+        profile.mkdir(mode=0o700, parents=True, exist_ok=True); profile.chmod(0o700)
+        active = __import__('subprocess').run(
+            ['systemctl', 'is-active', '--quiet', 'bdl-pool-openport@'+name+'.service']
+        ).returncode == 0
+        if not active:
+            with (profile/'trial.lock').open('a') as lock:
+                try:
+                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except BlockingIOError:
+                    raise SystemExit('Un essai '+name.upper()+' est encore actif. Attendre son arrêt.')
+        identity = client.credentials(profile)
+    elif identity_path.is_file():
+        try:
+            identity = json.loads(identity_path.read_text())
+        except (OSError, ValueError):
+            raise SystemExit('Identité OpenPort '+name.upper()+' invalide ; aucun port ne sera réattribué.') from None
+    else:
+        continue
+    if (
+        not isinstance(identity.get('client_id'), str)
+        or not identity['client_id']
+        or type(identity.get('remote_port')) is not int
+        or not 1024 <= identity['remote_port'] <= 65535
+    ):
+        raise SystemExit('Identité/port OpenPort invalide pour '+name.upper()+'.')
+    if identity['client_id'] in identities or identity['remote_port'] in ports:
+        raise SystemExit('OpenPort a attribué un identifiant ou port déjà utilisé. Aucun relais n’a été démarré.')
+    identities.add(identity['client_id']); ports.add(identity['remote_port'])
+    if name in selected:
+        print(name.upper()+': identité sauvegardée, port '+str(identity['remote_port'])+'.')
 destination.write_text('''[Unit]
 Description=BDL Pool OpenPort relay %i
 Wants=network-online.target
@@ -81,45 +109,41 @@ PY
 sudo -v
 sudo install -m 644 "$temporary/bdl-pool-openport@.service" /etc/systemd/system/bdl-pool-openport@.service
 sudo systemctl daemon-reload
-for profile in v1 v2 api; do
-  sudo systemctl enable "bdl-pool-openport@$profile.service"
-  sudo systemctl restart "bdl-pool-openport@$profile.service"
+for profile in "${profiles[@]}"; do
+  service="bdl-pool-openport@$profile.service"
+  sudo systemctl enable "$service"
+  if sudo systemctl is-active --quiet "$service"; then
+    echo "$profile : already running; not restarted."
+  else
+    sudo systemctl start "$service"
+  fi
 done
-python3 - "$HOME/.local/state/bdl-pool-openport" <<'PY'
+python3 - "$HOME/.local/state/bdl-pool-openport" "${profiles[@]}" <<'PY'
 from pathlib import Path
-import http.client, json, socket, ssl, subprocess, sys, time
+import http.client, json, socket, ssl, sys, time
 root = Path(sys.argv[1])
+profiles = sys.argv[2:]
 host = 'bdl-pool.duckdns.org'
-deadline = time.monotonic()+40
 routes = {}
-while time.monotonic() < deadline:
-    for name in ('v1', 'v2', 'api'):
-        try:
-            data = json.loads((root/name/'public.json').read_text())
-            if isinstance(data.get('host'), str) and type(data.get('port')) is int:
-                routes[name] = data
-        except (OSError, ValueError):
-            pass
-    if len(routes) == 3:
-        break
-    time.sleep(.5)
-for name in ('v1', 'v2', 'api'):
-    if name in routes:
-        route = routes[name]
-        print(name.upper()+' : '+route['host']+':'+str(route['port']))
-    else:
-        print(name.upper()+' : adresse non confirmée. Vérifier systemctl status bdl-pool-openport@'+name+'.')
-# Validate the current certificate with the real hostname, while connecting to
-# the relay directly. This checks HTTPS before any DNS migration.
-confirmed = False
-if 'api' in routes:
+for name in profiles:
+    try:
+        data = json.loads((root/name/'public.json').read_text())
+        if isinstance(data.get('host'), str) and type(data.get('port')) is int:
+            routes[name] = data
+            print(name.upper()+' : '+data['host']+':'+str(data['port']))
+        else:
+            print(name.upper()+' : route non confirmée.')
+    except (OSError, ValueError):
+        print(name.upper()+' : route non confirmée. Vérifier systemctl status bdl-pool-openport@'+name+'.')
+if 'api' in profiles and 'api' in routes:
     route = routes['api']
-    for attempt in range(5):
+    confirmed = False
+    for _ in range(5):
         try:
             context = ssl.create_default_context()
             with socket.create_connection((route['host'], route['port']), timeout=4) as raw:
                 with context.wrap_socket(raw, server_hostname=host) as tls:
-                    tls.sendall(('GET /api/v1/health HTTP/1.1\r\nHost: '+host+'\r\nConnection: close\r\n\r\n').encode())
+                    tls.sendall(('GET /api/v1/health HTTP/1.1\\r\\nHost: '+host+'\\r\\nConnection: close\\r\\n\\r\\n').encode())
                     response = http.client.HTTPResponse(tls); response.begin()
                     data = json.loads(response.read(4096))
                     confirmed = response.status == 200 and data.get('status') == 'ok'
@@ -127,29 +151,6 @@ if 'api' in routes:
                 break
         except (OSError, ValueError, http.client.HTTPException):
             time.sleep(1)
-print('API HTTPS à travers OpenPort : '+('validée (certificat actuel).' if confirmed else 'non confirmée.'))
-print('DNS à migrer après préparation du renouvellement HTTPS.')
-# Print only updater names, never unit commands, cron contents or tokens.
-found = set()
-for directory in (Path('/etc/systemd/system'), Path('/usr/lib/systemd/system')):
-    for path in directory.glob('*'):
-        if path.suffix not in ('.service', '.timer'):
-            continue
-        if 'duckdns' in path.name.lower() or 'ddns' in path.name.lower():
-            found.add(path.name)
-        elif path.is_file():
-            try:
-                text = path.read_text()
-                if 'duckdns.org/update' in text or ('duckdns' in text.lower() and 'bdl-pool' in text):
-                    found.add(path.name)
-            except (OSError, UnicodeError):
-                pass
-print('Mise à jour DuckDNS repérée : '+(', '.join(sorted(found)) if found else 'aucune unité systemd trouvée.'))
-try:
-    cron = subprocess.run(['crontab', '-l'], capture_output=True, text=True, timeout=3).stdout
-    present = any(line.strip() and not line.lstrip().startswith('#') and ('duckdns' in line.lower() or 'ddns' in line.lower()) for line in cron.splitlines())
-    print('Tâche cron DuckDNS : '+('repérée (contenu conservé localement).' if present else 'non repérée.'))
-except (OSError, subprocess.TimeoutExpired):
-    pass
-print('Bitcoin Core et CKPool n’ont pas été redémarrés. Le site et DuckDNS gardent leurs adresses actuelles.')
+    print('API HTTPS à travers OpenPort : '+('validée.' if confirmed else 'non confirmée.'))
+print('Les profils déjà actifs n’ont pas été redémarrés.')
 PY

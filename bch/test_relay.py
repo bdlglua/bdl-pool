@@ -110,7 +110,7 @@ class BCHRelayTests(unittest.TestCase):
         spec = importlib.util.spec_from_file_location('relay_service', Path(__file__).parents[1]/'monitoring/openport-service.py')
         service = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(service)
-        self.assertEqual(service.PORTS, dict(v1=3333, v2=3336, api=443, bch=3334))
+        self.assertEqual(service.PORTS, dict(v1=3333, v2=3336, api=443, bch=3334, collective=3337))
 
     def test_public_probe_requires_the_request_to_reach_the_local_responder(self):
         profile = relay.profile_directory(self.root)
