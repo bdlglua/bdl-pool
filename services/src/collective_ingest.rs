@@ -714,7 +714,7 @@ mod tests {
         let mut length = 0_usize;
         loop {
             let mut line = String::new();
-            if reader.read_line(&mut line)? == 0 || line == "\\r\\n" {
+            if reader.read_line(&mut line)? == 0 || line == "\r\n" {
                 break;
             }
             if let Some((key, value)) = line.split_once(':') {
@@ -733,7 +733,7 @@ mod tests {
         let encoded = serde_json::to_vec(&body)?;
         write!(
             stream,
-            "HTTP/1.1 200 OK\\r\\nContent-Type: application/json\\r\\nContent-Length: {}\\r\\nConnection: close\\r\\n\\r\\n",
+            "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
             encoded.len()
         )?;
         stream.write_all(&encoded)?;
@@ -750,11 +750,15 @@ mod tests {
             assert!(line.starts_with("POST /api/v1/collective/internal/authorize "));
             assert_eq!(body["participantId"], "0123456789abcdef0123456789abcdef");
             assert_eq!(body["stratumPassword"], "a".repeat(64));
-            reply_http(&mut stream, json!({
-                "authorized":true,
-                "participantId":"0123456789abcdef0123456789abcdef",
-                "coin":"btc"
-            })).unwrap();
+            reply_http(
+                &mut stream,
+                json!({
+                    "authorized":true,
+                    "participantId":"0123456789abcdef0123456789abcdef",
+                    "coin":"btc"
+                }),
+            )
+            .unwrap();
         });
 
         let upstream = TcpListener::bind("127.0.0.1:0").unwrap();
@@ -766,13 +770,17 @@ mod tests {
             let mut line = String::new();
             reader.read_line(&mut line).unwrap();
             assert!(line.contains("mining.subscribe"));
-            writer.write_all(b"{\\"id\\":1,\\"result\\":[[],\\"abcd\\",4],\\"error\\":null}\\n").unwrap();
+            writer
+                .write_all(b"{\"id\":1,\"result\":[[],\"abcd\",4],\"error\":null}\n")
+                .unwrap();
             writer.flush().unwrap();
 
             line.clear();
             reader.read_line(&mut line).unwrap();
             assert!(line.contains("mining.authorize"));
-            writer.write_all(b"{\\"id\\":2,\\"result\\":true,\\"error\\":null}\\n").unwrap();
+            writer
+                .write_all(b"{\"id\":2,\"result\":true,\"error\":null}\n")
+                .unwrap();
             writer.flush().unwrap();
 
             line.clear();
@@ -796,35 +804,40 @@ mod tests {
             let stream = receiver.recv().unwrap();
             proxy_connection(stream, worker_config.upstream, worker_config).unwrap();
         });
-        let (client, _) = {
-            let listener = proxy_listener;
-            let handle = thread::spawn(move || {
-                let (stream, _) = listener.accept().unwrap();
-                sender.send(stream).unwrap();
-            });
-            let client = TcpStream::connect(proxy_address).unwrap();
-            handle.join().unwrap();
-            (client, ())
-        };
+        let listener_worker = thread::spawn(move || {
+            let (stream, _) = proxy_listener.accept().unwrap();
+            sender.send(stream).unwrap();
+        });
+        let client = TcpStream::connect(proxy_address).unwrap();
+        listener_worker.join().unwrap();
         let mut reader = BufReader::new(client.try_clone().unwrap());
         let mut writer = client;
         writer.set_read_timeout(Some(Duration::from_secs(3))).unwrap();
-        writer.write_all(b"{\\"id\\":1,\\"method\\":\\"mining.subscribe\\",\\"params\\":[\\"BDLMinerV2\\"]}\\n").unwrap();
+        writer
+            .write_all(b"{\"id\":1,\"method\":\"mining.subscribe\",\"params\":[\"BDLMinerV2\"]}\n")
+            .unwrap();
         writer.flush().unwrap();
         let mut response = String::new();
         reader.read_line(&mut response).unwrap();
-        assert!(response.contains("\\"id\\":1"));
+        assert!(response.contains("\"id\":1"));
 
-        writer.write_all(format!(
-            "{{\\"id\\":2,\\"method\\":\\"mining.authorize\\",\\"params\\":[\\"0123456789abcdef0123456789abcdef.gamma601\\",\\"{}\\"]}}\\n",
-            "a".repeat(64)
-        ).as_bytes()).unwrap();
+        writer
+            .write_all(
+                format!(
+                    "{{\"id\":2,\"method\":\"mining.authorize\",\"params\":[\"0123456789abcdef0123456789abcdef.gamma601\",\"{}\"]}}\n",
+                    "a".repeat(64)
+                )
+                .as_bytes(),
+            )
+            .unwrap();
         writer.flush().unwrap();
         response.clear();
         reader.read_line(&mut response).unwrap();
-        assert!(response.contains("\\"result\\":true"));
+        assert!(response.contains("\"result\":true"));
 
-        writer.write_all(b"{\\"id\\":10,\\"method\\":\\"mining.submit\\",\\"params\\":[]}\\n").unwrap();
+        writer
+            .write_all(b"{\"id\":10,\"method\":\"mining.submit\",\"params\":[]}\n")
+            .unwrap();
         writer.flush().unwrap();
         coordinator_worker.join().unwrap();
         upstream_worker.join().unwrap();
