@@ -128,6 +128,9 @@ def build_config(base: dict, payout_address: str, log_directory: str) -> dict:
         config.pop(key, None)
     config["btcaddress"] = payout_address
     config["serverurl"] = ["127.0.0.1:3338"]
+    # Do not let the new CKPool instance collide with the solo instance's
+    # mining IPC socket inherited from local.conf.
+    config["ipcmining"] = "/run/bdl-pool-ckpool-collective/mining.sock"
     config["logdir"] = str(Path(log_directory)) + "/"
     config["donation"] = 0.0
     # CKPool's initial vardiff is integral. Starting at diff 1 prevents slow
