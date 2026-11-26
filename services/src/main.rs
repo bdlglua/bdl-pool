@@ -51,9 +51,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Arc::new(PoolApi::new(config, "btc").map_err(|e| io::Error::other(e.message))?);
             let address = format!("127.0.0.1:{port}");
             println!("BDL Pool Rust API listening on {address}");
-            http::serve(&address, move |request| match api.dispatch(&request.target) {
-                Ok(data) => http::Response::json(200, data),
-                Err(error) => error.response(),
+            http::serve(&address, move |request| {
+                match api.dispatch(&request.target) {
+                    Ok(data) => http::Response::json(200, data),
+                    Err(error) => error.response(),
+                }
             })?;
         }
         "collective" => {
