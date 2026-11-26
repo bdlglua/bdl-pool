@@ -229,13 +229,8 @@ fn coinbase_reward_for_address(
             "Bitcoin Core block hash/height changed while the block was inspected",
         ));
     }
-    let confirmations = block["confirmations"]
-        .as_u64()
-        .ok_or_else(|| io::Error::other("Bitcoin Core did not return block confirmations"))?;
-    if confirmations < BTC_COINBASE_MATURITY {
-        return Err(io::Error::other(
-            "Bitcoin block has not reached coinbase maturity; will retry",
-        ));
+    if block["confirmations"].as_i64().unwrap_or(0) < 1 {
+        return Err(io::Error::other("Bitcoin Core block is not in the active chain"));
     }
 
     let transactions = block["tx"]
@@ -243,11 +238,13 @@ fn coinbase_reward_for_address(
         .filter(|items| !items.is_empty())
         .ok_or_else(|| io::Error::other("Bitcoin block has no decoded transactions"))?;
     let coinbase = &transactions[0];
-    let inputs = coinbase["vin"]
+    if !coinbase["vin"]
         .as_array()
-        .filter(|items| items.len() == 1 && items[0]["coinbase"].is_string())
-        .ok_or_else(|| io::Error::other("first Bitcoin block transaction is not coinbase"))?;
-    let _ = inputs;
+        .map(|items| items.len() == 1 && items[0]["coinbase"].is_string())
+        .unwrap_or(false)
+    {
+        return Err(io::Error::other("first Bitcoin block transaction is not coinbase"));
+    }
     let outputs = coinbase["vout"]
         .as_array()
         .ok_or_else(|| io::Error::other("coinbase transaction has no outputs"))?;
@@ -281,6 +278,70 @@ fn coinbase_reward_for_address(
         ));
     }
     Ok(Some(reward_atoms))
+}
+
+fn post_candidate(config: &WatchConfig, block_hash: &str, height: u64, reward_atoms: u64) -> io::Result<()> {
+    let response = ureq::post(&format!("{}/internal/candidates", config.coordinator_url))
+        .timeout(Duration::from_secs(5))
+        .set("Authorization", &format!("Bearer {}", config.backend_token))
+        .set("Content-Type", "application/json")
+        .send_json(json!({
+            "coin":"btc",
+            "blockId":block_hash,
+            "height":height,
+            "rewardAtoms":reward_atoms
+        }))
+        .map_err(|error| match error {
+            ureq::Error::Status(status, _) => io::Error::other(format!(
+                "coordinator rejected BTC block candidate (HTTP {status}); retrying"
+            )),
+            _ => io::Error::other("coordinator is unavailable while recording block candidate"),
+        })?;
+    let result: Value = response
+        .into_json()
+        .map_err(|_| io::Error::other("coordinator returned invalid block-candidate response"))?;
+    if result["status"].as_str() == Some("error") {
+        return Err(io::Error::other("coordinator rejected BTC block candidate"));
+    }
+    Ok(())
+}
+
+fn pending_candidates(config: &WatchConfig) -> io::Result<Vec<Value>> {
+    let response = ureq::get(&format!("{}/internal/candidates", config.coordinator_url))
+        .timeout(Duration::from_secs(5))
+        .set("Authorization", &format!("Bearer {}", config.backend_token))
+        .call()
+        .map_err(|_| io::Error::other("coordinator candidate list is unavailable"))?;
+    let result: Value = response
+        .into_json()
+        .map_err(|_| io::Error::other("coordinator returned invalid candidate list"))?;
+    result["candidates"]
+        .as_array()
+        .cloned()
+        .ok_or_else(|| io::Error::other("coordinator candidate list is malformed"))
+}
+
+fn orphan_candidate(config: &WatchConfig, block_hash: &str) -> io::Result<()> {
+    let response = ureq::post(&format!("{}/internal/candidates/orphan", config.coordinator_url))
+        .timeout(Duration::from_secs(5))
+        .set("Authorization", &format!("Bearer {}", config.backend_token))
+        .set("Content-Type", "application/json")
+        .send_json(json!({"coin":"btc","blockId":block_hash}))
+        .map_err(|_| io::Error::other("coordinator could not mark orphaned block candidate"))?;
+    let result: Value = response
+        .into_json()
+        .map_err(|_| io::Error::other("coordinator returned invalid orphan response"))?;
+    if result["status"].as_str() == Some("error") {
+        return Err(io::Error::other("coordinator rejected orphaned block candidate"));
+    }
+    Ok(())
+}
+
+fn block_confirmations(block: &Value) -> io::Result<u64> {
+    block["confirmations"]
+        .as_u64()
+        .filter(|confirmations| *confirmations > 0)
+        .ok_or_else(|| io::Error::other("Bitcoin Core did not return active-chain confirmations"))
 }
 
 fn post_mature_block(config: &WatchConfig, block_hash: &str, reward_atoms: u64) -> io::Result<()> {
@@ -441,6 +502,23 @@ impl CursorStore {
         Ok(())
     }
 
+    fn rewind_to(&mut self, height: u64, previous_hash: Option<&str>) -> io::Result<()> {
+        if height >= self.cursor.next_height {
+            return Ok(());
+        }
+        let next = Cursor {
+            next_height: height,
+            last_height: height.checked_sub(1),
+            last_hash: previous_hash.map(str::to_ascii_lowercase),
+        };
+        if next.last_height.is_some() != next.last_hash.is_some() {
+            return Err(io::Error::other("rewind checkpoint is incomplete"));
+        }
+        self.save(&next)?;
+        self.cursor = next;
+        Ok(())
+    }
+
     fn advance(&mut self, height: u64, hash: &str) -> io::Result<()> {
         if height != self.cursor.next_height {
             return Err(io::Error::other("block cursor advanced out of sequence"));
@@ -475,27 +553,74 @@ fn poll_once(config: &WatchConfig, cursor: &mut CursorStore) -> io::Result<usize
     let tip = rpc_call(config, "getblockcount", json!([]))?
         .as_u64()
         .ok_or_else(|| io::Error::other("Bitcoin Core returned an invalid chain height"))?;
-    let last_mature_height = tip.saturating_sub(BTC_COINBASE_MATURITY - 1);
     let mut scanned = 0;
 
-    while cursor.cursor.next_height <= last_mature_height && scanned < MAX_BLOCKS_PER_POLL {
+    // Discover candidates as soon as CKPool's coinbase transaction appears
+    // in the active chain. The coordinator freezes the accepted-share
+    // sequence at this point; later shares cannot dilute this block's PPLNS.
+    while cursor.cursor.next_height <= tip && scanned < MAX_BLOCKS_PER_POLL {
         let height = cursor.cursor.next_height;
         let hash = block_hash_at(config, height)?;
         let block = rpc_call(config, "getblock", json!([hash, 2]))?;
         let reward = coinbase_reward_for_address(&block, &hash, height, &config.payout_address)?;
-        // Check the canonical hash again after decoding the full block. Never
-        // account a block whose height was replaced while it was inspected.
         if block_hash_at(config, height)? != hash {
             return Err(io::Error::other(
-                "Bitcoin chain changed while a mature block was being inspected",
+                "Bitcoin chain changed while a new block candidate was being inspected",
             ));
         }
         if let Some(reward_atoms) = reward {
-            post_mature_block(config, &hash, reward_atoms)?;
-            println!("Recorded mature BTC collective block at height {height}.");
+            post_candidate(config, &hash, height, reward_atoms)?;
+            println!("Captured BTC collective block candidate at height {height}.");
         }
         cursor.advance(height, &hash)?;
         scanned += 1;
+    }
+
+    // A mature candidate is accounted only if the same block is still
+    // canonical and its coinbase still pays the configured pool address.
+    for candidate in pending_candidates(config)? {
+        let height = candidate["height"]
+            .as_u64()
+            .ok_or_else(|| io::Error::other("saved candidate has invalid block height"))?;
+        let hash = candidate["blockId"]
+            .as_str()
+            .filter(|hash| hash.len() == 64)
+            .ok_or_else(|| io::Error::other("saved candidate has invalid block hash"))?;
+        let reward_atoms = candidate["rewardAtoms"]
+            .as_u64()
+            .filter(|reward| *reward > 0)
+            .ok_or_else(|| io::Error::other("saved candidate has invalid reward amount"))?;
+
+        if block_hash_at(config, height)? != hash {
+            orphan_candidate(config, hash)?;
+            let previous_hash = if height == 0 {
+                None
+            } else {
+                Some(block_hash_at(config, height - 1)?)
+            };
+            cursor.rewind_to(height, previous_hash.as_deref())?;
+            println!("Marked orphaned BTC collective block candidate at height {height}.");
+            continue;
+        }
+
+        let block = rpc_call(config, "getblock", json!([hash, 2]))?;
+        let current_reward =
+            coinbase_reward_for_address(&block, hash, height, &config.payout_address)?;
+        if current_reward != Some(reward_atoms) {
+            return Err(io::Error::other(
+                "saved candidate reward no longer matches the canonical coinbase output",
+            ));
+        }
+        if block_confirmations(&block)? < BTC_COINBASE_MATURITY {
+            continue;
+        }
+        if block_hash_at(config, height)? != hash {
+            return Err(io::Error::other(
+                "Bitcoin chain changed while a mature block was being verified",
+            ));
+        }
+        post_mature_block(config, hash, reward_atoms)?;
+        println!("Recorded mature BTC collective block at height {height}.");
     }
     Ok(scanned)
 }
@@ -532,7 +657,7 @@ mod tests {
             "payoutAddress":"1BoatSLRHtKNngkdXEeobR76b53LETtpyT",
             "windowWorkUnits":1000000000_u64,
             "startHeight":900000_u64,
-            "cursorPath":root.join("btc-block-cursor.json"),
+            "cursorPath":root.join("btc-block-cursor.json").display().to_string(),
             "pollIntervalSeconds":15
         })
     }
@@ -565,7 +690,7 @@ mod tests {
     }
 
     #[test]
-    fn only_a_mature_coinbase_output_to_the_collective_address_is_counted() {
+    fn coinbase_output_to_the_collective_address_is_detected_before_maturity() {
         let address = "1BoatSLRHtKNngkdXEeobR76b53LETtpyT";
         let block_hash = "b".repeat(64);
         let block = json!({
@@ -598,8 +723,13 @@ mod tests {
                 "vout":[{"value":3.125,"scriptPubKey":{"address":address}}]
             }]
         });
-        assert!(coinbase_reward_for_address(&block, &block_hash, 900001, address).is_err());
+        assert_eq!(
+            coinbase_reward_for_address(&block, &block_hash, 900001, address).unwrap(),
+            Some(312_500_000)
+        );
+        assert_eq!(block_confirmations(&block).unwrap(), 99);
         block["confirmations"] = 100.into();
+        assert_eq!(block_confirmations(&block).unwrap(), 100);
         assert!(coinbase_reward_for_address(&block, &"d".repeat(64), 900001, address).is_err());
     }
 
