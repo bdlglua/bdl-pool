@@ -124,7 +124,7 @@ fn cashaddr_prefix(value: &str, expected_prefix: &str) -> Option<String> {
         }
     }
     let version = (values[0] << 3) | (values[1] >> 2);
-    (checksum == 1 && values[33] & 3 == 0 && matches!(version, 0 | 8)).then(|| lower)
+    (checksum == 1 && values[33] & 3 == 0 && matches!(version, 0 | 8)).then_some(lower)
 }
 
 #[cfg(test)]
