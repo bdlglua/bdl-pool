@@ -230,7 +230,9 @@ fn proxy_connection(
     };
     let _ = client.set_nodelay(true);
     let _ = upstream.set_nodelay(true);
-    let _ = client.set_read_timeout(Some(Duration::from_secs(900)));
+    // Unauthenticated clients may subscribe first, but must authorize quickly
+    // or the proxy closes the connection instead of tying up a worker.
+    let _ = client.set_read_timeout(Some(Duration::from_secs(15)));
     let _ = upstream.set_read_timeout(Some(Duration::from_secs(900)));
     let mut client_reader = BufReader::new(client.try_clone()?);
     let mut upstream_writer = upstream.try_clone()?;
@@ -283,6 +285,9 @@ fn proxy_connection(
                 break;
             }
             authorized = true;
+            client_reader
+                .get_ref()
+                .set_read_timeout(Some(Duration::from_secs(900)))?;
             upstream_writer.write_all(&line)?;
             upstream_writer.flush()?;
             continue;
