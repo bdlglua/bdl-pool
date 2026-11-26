@@ -12,7 +12,7 @@ use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
 use std::{
     collections::BTreeMap,
     fs::{self, File, OpenOptions},
-    io::{self, BufRead, BufReader, Read, Seek, SeekFrom, Write},
+    io::{self, BufRead, BufReader, Seek, SeekFrom, Write},
     net::{SocketAddr, TcpListener, TcpStream},
     path::{Path, PathBuf},
     sync::{mpsc, Arc, Mutex},
@@ -220,7 +220,7 @@ fn stratum_method(line: &[u8]) -> Option<(String, Value)> {
 }
 
 fn proxy_connection(
-    mut client: TcpStream,
+    client: TcpStream,
     upstream_address: SocketAddr,
     config: Arc<IngestConfig>,
 ) -> io::Result<()> {
@@ -315,7 +315,7 @@ fn proxy_connection(
     Ok(())
 }
 
-pub fn serve_proxy(config: IngestConfig) -> io::Result<()> {
+fn serve_proxy(config: IngestConfig) -> io::Result<()> {
     let listener = TcpListener::bind(config.listen)?;
     listener.set_nonblocking(false)?;
     println!(
@@ -495,12 +495,11 @@ fn collect_sharelog_files(
             collect_sharelog_files(&path, root, depth + 1, files)?;
         } else if file_type.is_file()
             && path.extension().and_then(|ext| ext.to_str()) == Some("sharelog")
+            && path.starts_with(root)
         {
-            if path.starts_with(root) {
-                files.push(path);
-                if files.len() >= MAX_LOG_FILES {
-                    break;
-                }
+            files.push(path);
+            if files.len() >= MAX_LOG_FILES {
+                break;
             }
         }
     }
