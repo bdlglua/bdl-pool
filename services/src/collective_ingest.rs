@@ -868,9 +868,9 @@ mod tests {
         let mut rejected = base.clone();
         rejected["result"] = false.into();
         let mut content = serde_json::to_vec(&base).unwrap();
-        content.push(b'\\n');
+        content.push(b'\n');
         content.extend_from_slice(&serde_json::to_vec(&rejected).unwrap());
-        content.push(b'\\n');
+        content.push(b'\n');
         fs::write(&file, content).unwrap();
 
         let coordinator = TcpListener::bind("127.0.0.1:0").unwrap();
