@@ -187,7 +187,11 @@ fn send(
         write!(
             stream,
             "Allow: {}\r\n",
-            if allow_post { "GET, HEAD, POST, OPTIONS" } else { "GET, HEAD, OPTIONS" }
+            if allow_post {
+                "GET, HEAD, POST, OPTIONS"
+            } else {
+                "GET, HEAD, OPTIONS"
+            }
         )?;
     }
     if status == 401 {
@@ -256,7 +260,11 @@ fn serve_listener_mode(
                     } else if !matches!(request.method.as_str(), "GET" | "HEAD")
                         && !(allow_post && request.method == "POST")
                     {
-                        Response::error(405, "method_not_allowed", "This API does not allow this method.")
+                        Response::error(
+                            405,
+                            "method_not_allowed",
+                            "This API does not allow this method.",
+                        )
                     } else {
                         handler(&request)
                     };
