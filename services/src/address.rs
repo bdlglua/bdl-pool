@@ -87,7 +87,8 @@ fn cashaddr_prefix(value: &str, expected_prefix: &str) -> Option<String> {
     }
     let lower = value.to_lowercase();
     let (prefix, payload) = lower.split_once(':')?;
-    if prefix != expected_prefix || payload.len() != 42
+    if prefix != expected_prefix
+        || payload.len() != 42
         || !matches!(payload.as_bytes()[0], b'q' | b'p')
     {
         return None;
@@ -123,8 +124,7 @@ fn cashaddr_prefix(value: &str, expected_prefix: &str) -> Option<String> {
         }
     }
     let version = (values[0] << 3) | (values[1] >> 2);
-    (checksum == 1 && values[33] & 3 == 0 && matches!(version, 0 | 8))
-        .then(|| lower)
+    (checksum == 1 && values[33] & 3 == 0 && matches!(version, 0 | 8)).then(|| lower)
 }
 
 #[cfg(test)]
@@ -142,7 +142,10 @@ mod tests {
             canonical_coin("ecash:qp63uahgrxged4z5jswyt5dn5v3lzsem6cacy2kzvq", "xec").as_deref(),
             Some("ecash:qp63uahgrxged4z5jswyt5dn5v3lzsem6cacy2kzvq")
         );
-        assert_eq!(canonical_coin("1BoatSLRHtKNngkdXEeobR76b53LETtpyT", "dgb"), None);
+        assert_eq!(
+            canonical_coin("1BoatSLRHtKNngkdXEeobR76b53LETtpyT", "dgb"),
+            None
+        );
         assert_eq!(canonical_coin("not-an-address", "ppc"), None);
     }
 }
