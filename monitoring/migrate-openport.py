@@ -41,7 +41,10 @@ def run(command, label):
 
 def routes():
     result = {}
-    for name in ('v1', 'v2', 'api'):
+    profiles = ('v1', 'v2', 'api')
+    if (STATE/'collective').is_dir():
+        profiles += ('collective',)
+    for name in profiles:
         state = json.loads((STATE/name/'public.json').read_text())
         identity = json.loads((STATE/name/'identity.json').read_text())
         if (state.get('host') != 'openport.pw' or type(state.get('port')) is not int
@@ -50,8 +53,8 @@ def routes():
         if subprocess.run(['systemctl', 'is-active', '--quiet', 'bdl-pool-openport@'+name+'.service']).returncode:
             raise MigrationError('Le relais '+name.upper()+' n’est pas actif ; DNS conservé.')
         result[name] = state['port']
-    if len(set(result.values())) != 3:
-        raise MigrationError('Les trois ports publics doivent être distincts.')
+    if len(set(result.values())) != len(result):
+        raise MigrationError('Les ports publics des relais doivent être distincts.')
     return result
 
 
@@ -220,6 +223,8 @@ def main():
             install_dns_timer()
             run(['systemctl', 'enable', '--now', 'certbot.timer'], 'Activation du renouvellement des certificats')
             public = dict(domain=DOMAIN, v1Port=ports['v1'], v2Port=ports['v2'], apiPublicPort=ports['api'], managedTLS=True)
+            if 'collective' in ports:
+                public['collectivePort'] = ports['collective']
             # Persist the working certificate mode before DNS. A future API
             # reinstall must never revert to port-based ACME challenges.
             dns.private_write(ROOT/'public.json', (json.dumps(public, indent=2)+'\n').encode(), 0o644)
