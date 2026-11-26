@@ -930,7 +930,7 @@ mod tests {
             "workername":"gamma601"
         });
         let mut line = serde_json::to_vec(&record).unwrap();
-        line.push(b'\\n');
+        line.push(b'\n');
         fs::write(&file, line).unwrap();
         let config = IngestConfig {
             listen: "127.0.0.1:3337".parse().unwrap(),
