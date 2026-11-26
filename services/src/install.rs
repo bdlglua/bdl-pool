@@ -100,7 +100,10 @@ fn configure_relay(settings: &mut Value, relay: &Value) -> io::Result<String> {
     settings["v2Port"] = relay["v2Port"].clone();
     settings["apiPublicPort"] = relay["apiPublicPort"].clone();
     if let Some(port) = relay.get("collectivePort").filter(|value| {
-        value.as_u64().map(|p| (1..=65535).contains(&p)).unwrap_or(false)
+        value
+            .as_u64()
+            .map(|p| (1..=65535).contains(&p))
+            .unwrap_or(false)
     }) {
         settings["collectivePort"] = port.clone();
     }
