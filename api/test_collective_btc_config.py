@@ -15,7 +15,7 @@ class CollectiveBtcConfigTests(unittest.TestCase):
     def test_validates_mainnet_base58_and_segwit_addresses(self):
         self.assertTrue(module.valid_mainnet_address("1BoatSLRHtKNngkdXEeobR76b53LETtpyT"))
         self.assertTrue(module.valid_mainnet_address("3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy"))
-        self.assertTrue(module.valid_mainnet_address("bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kygt080"))
+        self.assertTrue(module.valid_mainnet_address("bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"))
         self.assertFalse(module.valid_mainnet_address("not-a-btc-address"))
         self.assertFalse(module.valid_mainnet_address("mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn"))
         self.assertFalse(module.valid_mainnet_address("bc1notvalid"))
