@@ -117,7 +117,7 @@ impl WatchConfig {
         if !cursor_path.is_absolute() {
             return Err(io::Error::other("cursorPath must be an absolute path"));
         }
-        let poll_secs = value["pollIntervalSeconds"].as_u64().unwrap_or(15);
+        let poll_secs = value["pollIntervalSeconds"].as_u64().unwrap_or(5);
         if !(5..=300).contains(&poll_secs) {
             return Err(io::Error::other(
                 "pollIntervalSeconds must be between 5 and 300",
