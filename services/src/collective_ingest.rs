@@ -373,8 +373,10 @@ fn parse_ckpool_share(value: &Value) -> Option<AcceptedShare> {
     }
     let work_units = work as u64;
 
-    let workinfo = string_field(value, "workinfoid", 32)
-        .or_else(|| value["workinfoid"].as_u64().map(|_| "numeric-workinfo"))?;
+    let workinfo = value["workinfoid"]
+        .as_u64()
+        .map(|number| number.to_string())
+        .or_else(|| string_field(value, "workinfoid", 32).map(str::to_owned))?;
     let client = value["clientid"].to_string();
     let nonce2 = string_field(value, "nonce2", 64)?;
     let nonce = string_field(value, "nonce", 16)?;
@@ -548,8 +550,11 @@ fn process_sharelog_file(
 }
 
 fn process_sharelogs(config: &IngestConfig) -> io::Result<usize> {
+    let root_metadata = fs::symlink_metadata(&config.share_log_root)?;
+    if root_metadata.file_type().is_symlink() || !root_metadata.is_dir() {
+        return Err(io::Error::other("shareLogDirectory must be a real directory"));
+    }
     let root = config.share_log_root.canonicalize()?;
-    let root_metadata = fs::symlink_metadata(&root)?;
     if root_metadata.file_type().is_symlink() || !root_metadata.is_dir() {
         return Err(io::Error::other("shareLogDirectory must be a real directory"));
     }
@@ -584,10 +589,11 @@ fn sharelog_loop(config: IngestConfig) {
 /// collector. CKPool's own listener must remain private on 127.0.0.1.
 pub fn run(value: &Value) -> io::Result<()> {
     let config = IngestConfig::from_value(value)?;
-    let root = config.share_log_root.canonicalize()?;
-    if !root.is_dir() {
-        return Err(io::Error::other("shareLogDirectory is not a directory"));
+    let root_meta = fs::symlink_metadata(&config.share_log_root)?;
+    if root_meta.file_type().is_symlink() || !root_meta.is_dir() {
+        return Err(io::Error::other("shareLogDirectory must be a real directory"));
     }
+    let root = config.share_log_root.canonicalize()?;
     let mut collector_config = config.clone();
     collector_config.share_log_root = root;
     thread::spawn(move || sharelog_loop(collector_config));
