@@ -940,7 +940,9 @@ mod tests {
             share_log_root: log_root.clone(),
             cursor_path: root.path().join("cursor.json"),
         };
-        assert_eq!(process_sharelogs(&config).unwrap(), 0);
+        // One complete rejected CKPool line is consumed and checkpointed,
+        // but parse_ckpool_share returns None so it is never posted upstream.
+        assert_eq!(process_sharelogs(&config).unwrap(), 1);
         let cursors = read_cursors(&config.cursor_path).unwrap();
         assert!(cursors.contains_key("00000001/0000000000000001.sharelog"));
         assert_eq!(
